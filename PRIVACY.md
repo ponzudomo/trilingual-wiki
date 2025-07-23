@@ -1,4 +1,4 @@
-# Privacy Policy for Trilingual Wikipedia
+# Privacy Policy for Trilingual Wiki
 
 **Effective Date:** July 24, 2025
 
