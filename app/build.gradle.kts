@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-    namespace = "io.github.nicolasraoul.trilingual_wiki"
+    namespace = "io.github.nicolasraoul.rosette"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "io.github.nicolasraoul.trilingual_wiki"
+        applicationId = "io.github.nicolasraoul.rosette"
         minSdk = 34
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 5
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

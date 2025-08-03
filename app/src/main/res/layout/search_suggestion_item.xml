@@ -6,6 +6,12 @@
     android:layout_height="wrap_content"
     android:padding="8dp">
 
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/suggestion_content_group"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="suggestion_thumbnail,suggestion_title,suggestion_description" />
+
     <ImageView
         android:id="@+id/suggestion_thumbnail"
         android:layout_width="50dp"
@@ -37,5 +43,27 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/suggestion_title"
         tools:text="Suggestion description text goes here." />
+
+    <LinearLayout
+        android:id="@+id/loading_indicator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="?android:attr/progressBarStyleSmall" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Searching..."/>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Trilingual Wiki"
+rootProject.name = "Rosette"
 include(":app")
  

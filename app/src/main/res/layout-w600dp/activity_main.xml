@@ -57,7 +57,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/webViewFR"
-        app:layout_constraintHorizontal_weight="1"
         android:layout_marginTop="8dp"/>
 
     <ProgressBar
@@ -79,7 +78,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@id/webViewEN"
         app:layout_constraintEnd_toStartOf="@+id/webViewJA"
-        app:layout_constraintHorizontal_weight="1"
         android:layout_marginTop="8dp"/>
 
     <ProgressBar
@@ -101,7 +99,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@id/webViewFR"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_weight="1"
         android:layout_marginTop="8dp"/>
 
     <ProgressBar
