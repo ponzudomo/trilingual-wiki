@@ -61,17 +61,17 @@ class LanguageSettingsDialog : DialogFragment() {
                 Log.e(TAG, "Failed to load languages", e)
                 loadingIndicator.visibility = View.GONE
                 errorText.visibility = View.VISIBLE
-                errorText.text = "Failed to load languages. Using fallback list."
+                errorText.text = getString(R.string.failed_load_languages)
             }
         }
 
         return AlertDialog.Builder(requireContext())
-            .setTitle("Select Languages")
+            .setTitle(R.string.select_languages_title)
             .setView(view)
-            .setPositiveButton("Save") { _, _ ->
+            .setPositiveButton(R.string.save) { _, _ ->
                 saveLanguages()
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(R.string.cancel, null)
             .create()
     }
 
@@ -103,12 +103,12 @@ class LanguageSettingsDialog : DialogFragment() {
 
     private fun addLanguage(language: WikipediaLanguage) {
         if (selectedLanguages.size >= MAX_SELECTED_LANGUAGES) {
-            Toast.makeText(context, "You can select up to $MAX_SELECTED_LANGUAGES languages", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.max_languages_selected, MAX_SELECTED_LANGUAGES), Toast.LENGTH_SHORT).show()
             return
         }
         
         if (selectedLanguages.any { it.code == language.code }) {
-            Toast.makeText(context, "Language already selected", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.language_already_selected), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -145,14 +145,14 @@ class LanguageSettingsDialog : DialogFragment() {
 
     private fun saveLanguages() {
         if (selectedLanguages.size != MAX_SELECTED_LANGUAGES) {
-            Toast.makeText(context, "Please select exactly $MAX_SELECTED_LANGUAGES languages", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.select_exact_languages, MAX_SELECTED_LANGUAGES), Toast.LENGTH_SHORT).show()
             return
         }
         
         val languageCodes = selectedLanguages.map { it.code }.toTypedArray()
         languageManager.saveLanguages(languageCodes)
         onLanguagesChanged?.invoke()
-        Toast.makeText(context, "Languages saved successfully", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, getString(R.string.languages_saved), Toast.LENGTH_SHORT).show()
     }
 
     inner class AvailableLanguagesAdapter(

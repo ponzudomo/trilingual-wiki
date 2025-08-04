@@ -36,6 +36,6 @@
         android:layout_height="24dp"
         android:layout_gravity="center_vertical"
         android:src="@android:drawable/ic_input_add"
-        android:contentDescription="Add language" />
+        android:contentDescription="@string/add_language" />
 
 </LinearLayout>
