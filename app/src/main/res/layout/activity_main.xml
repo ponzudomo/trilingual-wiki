@@ -56,9 +56,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/webViewFR"
         app:layout_constraintHorizontal_weight="1"
-        android:layout_marginTop="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="4dp"/>
+        android:layout_marginTop="8dp"/>
 
     <ProgressBar
         android:id="@+id/progressBarEN"
@@ -80,9 +78,7 @@
         app:layout_constraintStart_toEndOf="@id/webViewEN"
         app:layout_constraintEnd_toStartOf="@+id/webViewJA"
         app:layout_constraintHorizontal_weight="1"
-        android:layout_marginTop="8dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginEnd="4dp"/>
+        android:layout_marginTop="8dp"/>
 
     <ProgressBar
         android:id="@+id/progressBarFR"
@@ -104,9 +100,7 @@
         app:layout_constraintStart_toEndOf="@id/webViewFR"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_weight="1"
-        android:layout_marginTop="8dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginEnd="8dp"/>
+        android:layout_marginTop="8dp"/>
 
     <ProgressBar
         android:id="@+id/progressBarJA"
