@@ -11,6 +11,8 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -41,8 +43,9 @@ import java.net.URLDecoder
 
 class MainActivity : AppCompatActivity() {
 
-    private val displayLanguages = arrayOf("en", "fr", "ja")
-    private val searchPriorityLanguages = arrayOf("fr", "ja", "en")
+    private lateinit var languageManager: LanguageManager
+    private lateinit var displayLanguages: Array<String>
+    private lateinit var searchPriorityLanguages: Array<String>
 
     private lateinit var mainLayout: ConstraintLayout
     private lateinit var webViewEN: WebView
@@ -80,6 +83,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Log.d(TAG, "onCreate: Activity starting.")
+
+        // Initialize language manager and load configured languages
+        languageManager = LanguageManager(this)
+        loadConfiguredLanguages()
 
         mainLayout = findViewById(R.id.main)
         searchBar = findViewById(R.id.search_bar)
@@ -177,6 +184,53 @@ class MainActivity : AppCompatActivity() {
                 searchBar.clearFocus()
             }
             false
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_settings -> {
+                showLanguageSettingsDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun loadConfiguredLanguages() {
+        displayLanguages = languageManager.getDisplayLanguages()
+        searchPriorityLanguages = languageManager.getSearchPriorityLanguages()
+        Log.d(TAG, "Loaded configured languages: display=${displayLanguages.joinToString()}, search=${searchPriorityLanguages.joinToString()}")
+    }
+
+    private fun showLanguageSettingsDialog() {
+        val dialog = LanguageSettingsDialog.newInstance {
+            // Callback when languages are changed
+            loadConfiguredLanguages()
+            recreateWebViews()
+        }
+        dialog.show(supportFragmentManager, "LanguageSettingsDialog")
+    }
+
+    private fun recreateWebViews() {
+        // Recreate the webview mapping with new languages
+        webViewMap = mapOf(
+            displayLanguages[0] to webViewEN,
+            displayLanguages[1] to webViewFR,
+            displayLanguages[2] to webViewJA
+        )
+        
+        // Reload initial pages with new languages
+        isProgrammaticLoad = true
+        pagesToLoad = displayLanguages.size
+        webViewMap.forEach { (lang, webView) ->
+            Log.d(TAG, "recreateWebViews: Loading initial URL for $lang WebView.")
+            webView.loadUrl(getWikipediaBaseUrl(lang))
         }
     }
 
