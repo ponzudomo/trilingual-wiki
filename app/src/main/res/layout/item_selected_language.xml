@@ -23,6 +23,6 @@
         android:layout_gravity="center_vertical"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:src="@android:drawable/ic_delete"
-        android:contentDescription="Remove language" />
+        android:contentDescription="@string/remove_language" />
 
 </LinearLayout>
