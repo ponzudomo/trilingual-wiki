@@ -82,31 +82,8 @@ class LanguageManager(private val context: Context) {
             Log.e(TAG, "Failed to fetch Wikipedia languages", e)
         }
         
-        // Return a fallback list with common languages if API fails
-        return getFallbackLanguages()
-    }
-
-    /**
-     * Fallback list of common Wikipedia languages if API fails
-     */
-    private fun getFallbackLanguages(): List<WikipediaLanguage> {
-        return listOf(
-            WikipediaLanguage("en", "English", "English"),
-            WikipediaLanguage("fr", "French", "Français"),
-            WikipediaLanguage("ja", "Japanese", "日本語"),
-            WikipediaLanguage("es", "Spanish", "Español"),
-            WikipediaLanguage("de", "German", "Deutsch"),
-            WikipediaLanguage("it", "Italian", "Italiano"),
-            WikipediaLanguage("pt", "Portuguese", "Português"),
-            WikipediaLanguage("ru", "Russian", "Русский"),
-            WikipediaLanguage("zh", "Chinese", "中文"),
-            WikipediaLanguage("ar", "Arabic", "العربية"),
-            WikipediaLanguage("ko", "Korean", "한국어"),
-            WikipediaLanguage("hi", "Hindi", "हिन्दी"),
-            WikipediaLanguage("tr", "Turkish", "Türkçe"),
-            WikipediaLanguage("pl", "Polish", "Polski"),
-            WikipediaLanguage("nl", "Dutch", "Nederlands")
-        ).sortedBy { it.englishName }
+        // Return empty list if API fails
+        return emptyList()
     }
 
     /**
