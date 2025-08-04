@@ -282,6 +282,19 @@ class MainActivity : AppCompatActivity() {
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
             Log.d(TAG, "onPageFinished ($webViewIdentifier): Finished loading URL: $url")
+            
+            // Inject CSS to add padding to prevent text cropping at edges
+            view?.evaluateJavascript("""
+                (function() {
+                    var style = document.createElement('style');
+                    style.textContent = 
+                        'body { padding-left: 8px !important; padding-right: 8px !important; } ' +
+                        '.mw-parser-output { padding-left: 8px !important; padding-right: 8px !important; } ' +
+                        '#content { padding-left: 8px !important; padding-right: 8px !important; }';
+                    document.head.appendChild(style);
+                })();
+            """, null)
+            
             progressBarMap[view]?.visibility = View.GONE
             view?.visibility = View.VISIBLE
             if (isProgrammaticLoad) {
