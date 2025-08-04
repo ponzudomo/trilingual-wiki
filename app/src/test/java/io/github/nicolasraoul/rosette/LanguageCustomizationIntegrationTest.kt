@@ -25,46 +25,6 @@ class LanguageCustomizationIntegrationTest {
     }
 
     @Test
-    fun testFallbackLanguageList() {
-        // Test that we have a reasonable fallback list
-        val fallbackLanguages = listOf(
-            WikipediaLanguage("en", "English", "English"),
-            WikipediaLanguage("fr", "French", "Français"),
-            WikipediaLanguage("ja", "Japanese", "日本語"),
-            WikipediaLanguage("es", "Spanish", "Español"),
-            WikipediaLanguage("de", "German", "Deutsch"),
-            WikipediaLanguage("it", "Italian", "Italiano"),
-            WikipediaLanguage("pt", "Portuguese", "Português"),
-            WikipediaLanguage("ru", "Russian", "Русский"),
-            WikipediaLanguage("zh", "Chinese", "中文"),
-            WikipediaLanguage("ar", "Arabic", "العربية"),
-            WikipediaLanguage("ko", "Korean", "한국어"),
-            WikipediaLanguage("hi", "Hindi", "हिन्दी"),
-            WikipediaLanguage("tr", "Turkish", "Türkçe"),
-            WikipediaLanguage("pl", "Polish", "Polski"),
-            WikipediaLanguage("nl", "Dutch", "Nederlands")
-        )
-
-        // Verify we have the original default languages
-        assertTrue(fallbackLanguages.any { it.code == "en" })
-        assertTrue(fallbackLanguages.any { it.code == "fr" })
-        assertTrue(fallbackLanguages.any { it.code == "ja" })
-
-        // Verify we have good language coverage
-        assertTrue(fallbackLanguages.size >= 10)
-        
-        // Verify each language has all required fields
-        fallbackLanguages.forEach { lang ->
-            assertNotNull(lang.code)
-            assertNotNull(lang.englishName)
-            assertNotNull(lang.localName)
-            assertTrue(lang.code.isNotEmpty())
-            assertTrue(lang.englishName.isNotEmpty())
-            assertTrue(lang.localName.isNotEmpty())
-        }
-    }
-
-    @Test
     fun testLanguageCodeValidation() {
         // Test valid language codes (ISO 639 format)
         val validLanguages = listOf(
