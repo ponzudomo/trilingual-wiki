@@ -136,7 +136,7 @@ data class WikidataIdResponse(
 
 // Data classes for Wikipedia site matrix (language list) response
 data class SiteMatrixResponse(
-    val sitematrix: Map<String, SiteMatrixEntry>?
+    val sitematrix: Map<String, Any>?
 )
 
 data class SiteMatrixEntry(

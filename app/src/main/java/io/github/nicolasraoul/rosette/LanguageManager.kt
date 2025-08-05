@@ -62,9 +62,6 @@ class LanguageManager(private val context: Context) {
      */
     suspend fun getAvailableWikipediaLanguages(): List<WikipediaLanguage> {
         try {
-            val apiUrl = "https://en.wikipedia.org/w/api.php?action=sitematrix&format=json&smtype=language"
-            Log.d(TAG, "Making API request to: $apiUrl")
-            
             val response = wikipediaApiService.getWikipediaLanguages()
             Log.d(TAG, "API response received: ${response.code()}")
             
@@ -74,10 +71,22 @@ class LanguageManager(private val context: Context) {
                 
                 val languages = mutableListOf<WikipediaLanguage>()
                 
-                body?.sitematrix?.forEach { (key, site) ->
+                body?.sitematrix?.forEach { (key, value) ->
                     // Skip special entries like "count" and "specials"
-                    if (key != "count" && key != "specials" && site.code != null && site.name != null) {
-                        languages.add(WikipediaLanguage(site.code, site.name, site.localname ?: site.name))
+                    if (key != "count" && key != "specials" && value is Map<*, *>) {
+                        try {
+                            @Suppress("UNCHECKED_CAST")
+                            val site = value as Map<String, Any?>
+                            val code = site["code"] as? String
+                            val name = site["name"] as? String  
+                            val localname = site["localname"] as? String
+                            
+                            if (code != null && name != null) {
+                                languages.add(WikipediaLanguage(code, name, localname ?: name))
+                            }
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Failed to parse language entry for key $key: ${e.message}")
+                        }
                     }
                 }
                 
@@ -89,7 +98,7 @@ class LanguageManager(private val context: Context) {
             }
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            Log.e(TAG, "Failed to fetch Wikipedia languages: ${e.message}", e)
+            Log.e(TAG, "Failed to fetch Wikipedia languages: ${e.javaClass.simpleName}: ${e.message}", e)
         }
         
         // Return empty list if API fails
