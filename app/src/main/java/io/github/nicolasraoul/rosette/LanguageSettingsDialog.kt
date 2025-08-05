@@ -87,13 +87,22 @@ class LanguageSettingsDialog : DialogFragment() {
             .setNegativeButton(R.string.cancel, null)
             .create()
             
-        // Ensure title has proper contrast
+        // Ensure title has proper contrast - use multiple approaches for better compatibility
         dialog.setOnShowListener {
-            dialog.findViewById<TextView>(androidx.appcompat.R.id.alertTitle)?.apply {
-                setTextColor(resources.getColor(android.R.color.black, null))
+            // Try different ways to find and style the title
+            val titleView = dialog.findViewById<TextView>(androidx.appcompat.R.id.alertTitle)
+                ?: dialog.findViewById<TextView>(android.R.id.title)
+            
+            titleView?.apply {
+                setTextColor(0xFF000000.toInt()) // Force solid black color
                 textSize = 18f
                 setPadding(paddingLeft, 24, paddingRight, 16)
+                // Ensure background doesn't interfere
+                setBackgroundColor(0x00000000) // Transparent background
             }
+            
+            // Alternative approach - set window background to ensure contrast
+            dialog.window?.decorView?.setBackgroundColor(0xFFFFFFFF.toInt()) // White background
         }
         
         return dialog
