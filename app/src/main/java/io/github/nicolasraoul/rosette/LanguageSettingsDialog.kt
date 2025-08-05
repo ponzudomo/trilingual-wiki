@@ -62,7 +62,7 @@ class LanguageSettingsDialog : DialogFragment() {
                     Log.w(TAG, "No languages returned from API - showing error message")
                     loadingIndicator.visibility = View.GONE
                     errorText.visibility = View.VISIBLE
-                    errorText.text = "Unable to load language list. Please check your internet connection and try again.\n\nTap outside this dialog to close and try reopening the language settings."
+                    errorText.text = "Unable to load language list. There may be an issue with the Wikipedia API or your connection.\n\nTap outside this dialog to close and try reopening the language settings."
                 } else {
                     availableLanguages.addAll(fetchedLanguages)
                     loadingIndicator.visibility = View.GONE
@@ -71,10 +71,10 @@ class LanguageSettingsDialog : DialogFragment() {
                     Log.d(TAG, "Successfully loaded languages list")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load languages: ${e.message}", e)
+                Log.e(TAG, "Failed to load languages: ${e.javaClass.simpleName}: ${e.message}", e)
                 loadingIndicator.visibility = View.GONE
                 errorText.visibility = View.VISIBLE
-                errorText.text = "Failed to load languages: ${e.message ?: "Unknown error"}.\n\nPlease check your internet connection and try again."
+                errorText.text = "Failed to load languages: ${e.javaClass.simpleName}: ${e.message ?: "Unknown error"}.\n\nCheck the logs for more details."
             }
         }
 
