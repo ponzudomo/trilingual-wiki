@@ -50,22 +50,35 @@ class LanguageSettingsDialog : DialogFragment() {
         
         // Show loading and fetch languages
         loadingIndicator.visibility = View.VISIBLE
+        errorText.visibility = View.GONE
         lifecycleScope.launch {
             try {
+                Log.d(TAG, "Starting to fetch Wikipedia languages...")
                 availableLanguages.clear()
-                availableLanguages.addAll(languageManager.getAvailableWikipediaLanguages())
-                loadingIndicator.visibility = View.GONE
-                availableLanguagesAdapter.notifyDataSetChanged()
-                updateAvailableLanguages()
+                val fetchedLanguages = languageManager.getAvailableWikipediaLanguages()
+                Log.d(TAG, "Fetched ${fetchedLanguages.size} languages from API")
+                
+                if (fetchedLanguages.isEmpty()) {
+                    Log.w(TAG, "No languages returned from API - showing error message")
+                    loadingIndicator.visibility = View.GONE
+                    errorText.visibility = View.VISIBLE
+                    errorText.text = "No languages available. Please check your internet connection and try again."
+                } else {
+                    availableLanguages.addAll(fetchedLanguages)
+                    loadingIndicator.visibility = View.GONE
+                    availableLanguagesAdapter.notifyDataSetChanged()
+                    updateAvailableLanguages()
+                    Log.d(TAG, "Successfully loaded languages list")
+                }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load languages", e)
+                Log.e(TAG, "Failed to load languages: ${e.message}", e)
                 loadingIndicator.visibility = View.GONE
                 errorText.visibility = View.VISIBLE
-                errorText.text = getString(R.string.failed_load_languages)
+                errorText.text = "Failed to load languages: ${e.message ?: "Unknown error"}. Please check your internet connection."
             }
         }
 
-        return AlertDialog.Builder(requireContext())
+        val dialog = AlertDialog.Builder(requireContext())
             .setTitle(R.string.select_languages_title)
             .setView(view)
             .setPositiveButton(R.string.save) { _, _ ->
@@ -73,6 +86,17 @@ class LanguageSettingsDialog : DialogFragment() {
             }
             .setNegativeButton(R.string.cancel, null)
             .create()
+            
+        // Ensure title has proper contrast
+        dialog.setOnShowListener {
+            dialog.findViewById<TextView>(androidx.appcompat.R.id.alertTitle)?.apply {
+                setTextColor(resources.getColor(android.R.color.black, null))
+                textSize = 18f
+                setPadding(paddingLeft, 24, paddingRight, 16)
+            }
+        }
+        
+        return dialog
     }
 
     private fun setupRecyclerViews(availableRecyclerView: RecyclerView, selectedRecyclerView: RecyclerView) {

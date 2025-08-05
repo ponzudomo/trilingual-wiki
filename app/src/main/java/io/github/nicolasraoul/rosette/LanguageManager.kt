@@ -62,9 +62,14 @@ class LanguageManager(private val context: Context) {
      */
     suspend fun getAvailableWikipediaLanguages(): List<WikipediaLanguage> {
         try {
+            Log.d(TAG, "Making API request to Wikipedia sitematrix...")
             val response = wikipediaApiService.getWikipediaLanguages()
+            Log.d(TAG, "API response received: ${response.code()}")
+            
             if (response.isSuccessful) {
                 val body = response.body()
+                Log.d(TAG, "Response body: ${body != null}")
+                
                 val languages = mutableListOf<WikipediaLanguage>()
                 
                 body?.sitematrix?.forEach { (key, site) ->
@@ -74,15 +79,19 @@ class LanguageManager(private val context: Context) {
                     }
                 }
                 
+                Log.d(TAG, "Parsed ${languages.size} languages from sitematrix")
                 // Sort by English name for better UX
                 return languages.sortedBy { it.englishName }
+            } else {
+                Log.e(TAG, "API request failed with code: ${response.code()}, message: ${response.message()}")
             }
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            Log.e(TAG, "Failed to fetch Wikipedia languages", e)
+            Log.e(TAG, "Failed to fetch Wikipedia languages: ${e.message}", e)
         }
         
         // Return empty list if API fails
+        Log.w(TAG, "Returning empty language list due to API failure")
         return emptyList()
     }
 
