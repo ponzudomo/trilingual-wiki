@@ -1,3 +1,20 @@
 <resources>
     <string name="app_name">Rosette</string>
+    
+    <!-- Language Settings -->
+    <string name="language_settings">Language Settings</string>
+    <string name="select_languages_title">Select Languages</string>
+    <string name="select_languages_instruction">Select exactly 3 languages for your trilingual Wikipedia viewer:</string>
+    <string name="selected_languages">Selected Languages:</string>
+    <string name="available_languages">Available Languages:</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="add_language">Add language</string>
+    <string name="remove_language">Remove language</string>
+    <string name="loading_languages">Loading languages...</string>
+    <string name="failed_load_languages">Failed to load languages. Using fallback list.</string>
+    <string name="max_languages_selected">You can select up to %d languages</string>
+    <string name="language_already_selected">Language already selected</string>
+    <string name="select_exact_languages">Please select exactly %d languages</string>
+    <string name="languages_saved">Languages saved successfully</string>
 </resources>

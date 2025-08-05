@@ -53,6 +53,13 @@ interface WikipediaApiService {
         @Query("format") format: String = "json",
         @Query("redirects") redirects: Int = 1
     ): Response<WikidataIdResponse>
+
+    @GET("https://en.wikipedia.org/w/api.php")
+    suspend fun getWikipediaLanguages(
+        @Query("action") action: String = "sitematrix",
+        @Query("format") format: String = "json",
+        @Query("smtype") smtype: String = "language"
+    ): Response<SiteMatrixResponse>
 }
 
 // Data classes for standard Wikipedia API responses
@@ -125,4 +132,15 @@ data class DataValue(
 // Data class for the Wikidata ID response
 data class WikidataIdResponse(
     val query: QueryResponse?
+)
+
+// Data classes for Wikipedia site matrix (language list) response
+data class SiteMatrixResponse(
+    val sitematrix: Map<String, Any>?
+)
+
+data class SiteMatrixEntry(
+    val code: String?,
+    val name: String?,
+    val localname: String?
 )
