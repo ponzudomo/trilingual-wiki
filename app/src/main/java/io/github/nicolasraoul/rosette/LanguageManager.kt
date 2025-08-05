@@ -62,7 +62,9 @@ class LanguageManager(private val context: Context) {
      */
     suspend fun getAvailableWikipediaLanguages(): List<WikipediaLanguage> {
         try {
-            Log.d(TAG, "Making API request to Wikipedia sitematrix...")
+            val apiUrl = "https://en.wikipedia.org/w/api.php?action=sitematrix&format=json&smtype=language"
+            Log.d(TAG, "Making API request to: $apiUrl")
+            
             val response = wikipediaApiService.getWikipediaLanguages()
             Log.d(TAG, "API response received: ${response.code()}")
             
