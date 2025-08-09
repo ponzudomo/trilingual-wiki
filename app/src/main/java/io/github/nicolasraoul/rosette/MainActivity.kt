@@ -43,6 +43,13 @@ import com.bumptech.glide.Glide
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.net.URLDecoder
 
@@ -76,7 +83,9 @@ class MainActivity : AppCompatActivity() {
     private var isProgrammaticLoad = false
     private var pagesToLoad = 0
     private var pagesLoaded = 0
-    private var currentWikidataId: String? = null
+    private val currentWikidataId = MutableStateFlow<String?>(null)
+    private lateinit var isBookmarked: StateFlow<Boolean>
+    private var bookmarkMenuItem: MenuItem? = null
 
     private val wikipediaApiService = RetrofitClient.wikipediaApiService
     private val bookmarkDao by lazy {
@@ -160,6 +169,23 @@ class MainActivity : AppCompatActivity() {
 
         setupSuggestions()
 
+        isBookmarked = currentWikidataId.flatMapLatest { id ->
+            if (id == null) {
+                flowOf(false)
+            } else {
+                bookmarkDao.getBookmark(id).map { it != null }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+        lifecycleScope.launch {
+            isBookmarked.collect { bookmarked ->
+                bookmarkMenuItem?.let {
+                    val icon = if (bookmarked) R.drawable.ic_star else R.drawable.ic_star_outline
+                    it.setIcon(icon)
+                }
+            }
+        }
+
         if (savedInstanceState != null) {
             Log.d(TAG, "onCreate: Restoring instance state.")
             webViewMap.forEach { (key, webView) ->
@@ -226,6 +252,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
+        bookmarkMenuItem = menu?.findItem(R.id.action_bookmark)
+        // Set initial icon state based on the current value
+        val icon = if (isBookmarked.value) R.drawable.ic_star else R.drawable.ic_star_outline
+        bookmarkMenuItem?.setIcon(icon)
         return true
     }
 
@@ -233,16 +263,24 @@ class MainActivity : AppCompatActivity() {
         return when (item.itemId) {
             R.id.action_bookmark -> {
                 Log.d(TAG, "Bookmark action clicked")
-                currentWikidataId?.let { id ->
+                val id = currentWikidataId.value
+                if (id != null) {
                     lifecycleScope.launch {
-                        val bookmark = io.github.nicolasraoul.rosette.data.db.Bookmark(
-                            wikidataId = id,
-                            timestamp = System.currentTimeMillis()
-                        )
-                        bookmarkDao.insert(bookmark)
-                        Toast.makeText(this@MainActivity, "Bookmark saved", Toast.LENGTH_SHORT).show()
+                        if (isBookmarked.value) {
+                            bookmarkDao.delete(id)
+                            Toast.makeText(this@MainActivity, "Bookmark removed", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val bookmark = io.github.nicolasraoul.rosette.data.db.Bookmark(
+                                wikidataId = id,
+                                timestamp = System.currentTimeMillis()
+                            )
+                            bookmarkDao.insert(bookmark)
+                            Toast.makeText(this@MainActivity, "Bookmark saved", Toast.LENGTH_SHORT).show()
+                        }
                     }
-                } ?: Toast.makeText(this, "Cannot save bookmark: article not identified", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Cannot save bookmark: article not identified", Toast.LENGTH_SHORT).show()
+                }
                 true
             }
             R.id.action_bookmarks -> {
@@ -634,7 +672,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun performFullSearch(searchTerm: String, sitelinks: Map<String, String>? = null, wikidataId: String? = null) {
         Log.d(TAG, "performFullSearch: Starting a new search for '$searchTerm'. Wikidata ID: $wikidataId")
-        this.currentWikidataId = wikidataId
+        this.currentWikidataId.value = wikidataId
         // TODO: Refactor the 'else' block below to fetch the wikidataId for plain searches to allow bookmarking.
 
         lifecycleScope.launch {
@@ -675,6 +713,7 @@ class MainActivity : AppCompatActivity() {
 
                 if (sourceLangFound == null || finalTitleFromSource == null) {
                     updateStatus("Article \"$searchTerm\" not found.")
+                    this@MainActivity.currentWikidataId.value = null
                     progressBarMap.values.forEach { it.visibility = View.GONE }
                     isProgrammaticLoad = false
                     return@launch
