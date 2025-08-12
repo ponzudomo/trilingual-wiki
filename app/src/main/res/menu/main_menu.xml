@@ -7,6 +7,11 @@
         android:icon="@drawable/ic_star"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/action_random"
+        android:title="@string/action_random"
+        android:icon="@android:drawable/ic_menu_sort_by_size"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_bookmarks"
         android:title="@string/action_bookmarks"
         app:showAsAction="never" />
