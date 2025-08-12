@@ -143,12 +143,8 @@ class MainActivity : AppCompatActivity() {
 
         searchBar.setOnEditorActionListener { textView, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                val searchTerm = textView.text.toString().trim()
-                if (searchTerm.isNotEmpty()) {
-                    hideKeyboard()
-                    suggestionsRecyclerView.visibility = View.GONE
-                    performFullSearch(searchTerm)
-                }
+                // Disable search on Enter key press - only allow search via dropdown suggestions
+                hideKeyboard()
                 true
             } else {
                 false
