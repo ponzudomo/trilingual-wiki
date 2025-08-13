@@ -132,7 +132,7 @@ class MainActivity : AppCompatActivity() {
 
         searchBar.setOnFocusChangeListener { view, hasFocus ->
             Log.d(TAG, "SearchBar focus changed: $hasFocus")
-            if (!hasFocus && suggestionsRecyclerView.visibility == View.VISIBLE) {
+            if (!hasFocus && suggestionsRecyclerView.visibility == View.VISIBLE && !isConfigurationChanging) {
                 Log.d(TAG, "SearchBar lost focus, hiding suggestions")
                 suggestionsRecyclerView.visibility = View.GONE
             }
@@ -154,7 +154,7 @@ class MainActivity : AppCompatActivity() {
 
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (suggestionsRecyclerView.visibility == View.VISIBLE) {
+                if (suggestionsRecyclerView.visibility == View.VISIBLE && !isConfigurationChanging) {
                     suggestionsRecyclerView.visibility = View.GONE
                 } else if (webViewMap.values.any { it.canGoBack() }) {
                     webViewMap.values.forEach { if (it.canGoBack()) it.goBack() }
@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "onCreate: Activity creation complete.")
 
         mainLayout.setOnTouchListener { _, _ ->
-            if (suggestionsRecyclerView.visibility == View.VISIBLE) {
+            if (suggestionsRecyclerView.visibility == View.VISIBLE && !isConfigurationChanging) {
                 suggestionsRecyclerView.visibility = View.GONE
                 hideKeyboard()
                 searchBar.clearFocus()

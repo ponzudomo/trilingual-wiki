@@ -37,6 +37,10 @@ class ExampleInstrumentedTest {
         // Simulate search suggestions being visible first
         activity.runOnUiThread {
             val suggestionsRecyclerView = activity.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.search_suggestions_recycler_view)
+            val searchBar = activity.findViewById<android.widget.EditText>(R.id.search_bar)
+            
+            // Set up conditions that would normally trigger search dropdown
+            searchBar.setText("test search")
             suggestionsRecyclerView.visibility = View.VISIBLE
             
             // Verify it's visible before configuration change
@@ -48,6 +52,19 @@ class ExampleInstrumentedTest {
             
             // Verify search dropdown is now hidden
             assertEquals(View.GONE, suggestionsRecyclerView.visibility)
+            
+            // Verify search bar focus is cleared
+            assertFalse(searchBar.hasFocus())
+        }
+        
+        // Wait for the configuration change flag to reset
+        Thread.sleep(600)
+        
+        // Verify that search functionality works normally after configuration change
+        activity.runOnUiThread {
+            val searchBar = activity.findViewById<android.widget.EditText>(R.id.search_bar)
+            searchBar.setText("") // Clear first
+            searchBar.setText("normal search") // This should work normally now
         }
     }
 }
