@@ -129,6 +129,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        searchBar.setOnFocusChangeListener { view, hasFocus ->
+            Log.d(TAG, "SearchBar focus changed: $hasFocus")
+            if (!hasFocus && suggestionsRecyclerView.visibility == View.VISIBLE) {
+                Log.d(TAG, "SearchBar lost focus, hiding suggestions")
+                suggestionsRecyclerView.visibility = View.GONE
+            }
+        }
+
         searchBar.setOnEditorActionListener { textView, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 val searchTerm = textView.text.toString().trim()
@@ -172,13 +180,25 @@ class MainActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        Log.d(TAG, "onConfigurationChanged: Configuration changed, hiding search suggestions.")
+        Log.d(TAG, "onConfigurationChanged: Configuration changed")
+        Log.d(TAG, "onConfigurationChanged: Current search text: '${searchBar.text}'")
+        Log.d(TAG, "onConfigurationChanged: Search bar has focus: ${searchBar.hasFocus()}")
+        Log.d(TAG, "onConfigurationChanged: Suggestions visible: ${suggestionsRecyclerView.visibility == View.VISIBLE}")
+        
+        // Cancel any ongoing search to prevent dropdown from appearing
+        searchJob?.cancel()
         
         // Hide search suggestions dropdown when configuration changes (e.g., screen unfolding/folding)
         if (suggestionsRecyclerView.visibility == View.VISIBLE) {
+            Log.d(TAG, "onConfigurationChanged: Hiding visible suggestions dropdown")
             suggestionsRecyclerView.visibility = View.GONE
-            hideKeyboard()
+        }
+        
+        // Clear focus and hide keyboard to prevent triggering search
+        if (searchBar.hasFocus()) {
+            Log.d(TAG, "onConfigurationChanged: Clearing search bar focus")
             searchBar.clearFocus()
+            hideKeyboard()
         }
     }
 
@@ -206,17 +226,22 @@ class MainActivity : AppCompatActivity() {
         searchBar.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 if (programmaticTextChange) {
+                    Log.d(TAG, "TextWatcher: Ignoring programmatic text change")
                     programmaticTextChange = false
                     return
                 }
+                Log.d(TAG, "TextWatcher: Text changed to: '${s.toString()}', length: ${s.toString().length}")
                 searchJob?.cancel()
                 val searchText = s.toString().trim()
                 if (searchText.length < 2) {
+                    Log.d(TAG, "TextWatcher: Text too short, hiding suggestions")
                     suggestionsRecyclerView.visibility = View.GONE
                     return
                 }
+                Log.d(TAG, "TextWatcher: Starting search job for: '$searchText'")
                 searchJob = lifecycleScope.launch {
                     delay(300) // Debounce
+                    Log.d(TAG, "TextWatcher: Showing suggestions and performing search")
                     suggestionsAdapter.showLoading()
                     suggestionsRecyclerView.visibility = View.VISIBLE
                     performEntitySearch(searchText)
