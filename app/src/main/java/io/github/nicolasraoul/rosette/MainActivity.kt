@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var suggestionsAdapter: SearchSuggestionsAdapter
     private var searchJob: Job? = null
     private var programmaticTextChange = false
+    private var isConfigurationChanging = false
 
     private var isProgrammaticLoad = false
     private var pagesToLoad = 0
@@ -185,6 +186,9 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "onConfigurationChanged: Search bar has focus: ${searchBar.hasFocus()}")
         Log.d(TAG, "onConfigurationChanged: Suggestions visible: ${suggestionsRecyclerView.visibility == View.VISIBLE}")
         
+        // Set flag to prevent search functionality during configuration change
+        isConfigurationChanging = true
+        
         // Cancel any ongoing search to prevent dropdown from appearing
         searchJob?.cancel()
         
@@ -199,6 +203,13 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "onConfigurationChanged: Clearing search bar focus")
             searchBar.clearFocus()
             hideKeyboard()
+        }
+        
+        // Reset the flag after a delay to allow configuration change to complete
+        lifecycleScope.launch {
+            delay(500) // Give time for configuration change to complete
+            isConfigurationChanging = false
+            Log.d(TAG, "onConfigurationChanged: Reset configuration changing flag")
         }
     }
 
@@ -230,6 +241,12 @@ class MainActivity : AppCompatActivity() {
                     programmaticTextChange = false
                     return
                 }
+                
+                if (isConfigurationChanging) {
+                    Log.d(TAG, "TextWatcher: Ignoring text change during configuration change")
+                    return
+                }
+                
                 Log.d(TAG, "TextWatcher: Text changed to: '${s.toString()}', length: ${s.toString().length}")
                 searchJob?.cancel()
                 val searchText = s.toString().trim()
@@ -241,6 +258,11 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "TextWatcher: Starting search job for: '$searchText'")
                 searchJob = lifecycleScope.launch {
                     delay(300) // Debounce
+                    // Double-check the flag in case configuration changed during delay
+                    if (isConfigurationChanging) {
+                        Log.d(TAG, "TextWatcher: Configuration changing during search, aborting")
+                        return@launch
+                    }
                     Log.d(TAG, "TextWatcher: Showing suggestions and performing search")
                     suggestionsAdapter.showLoading()
                     suggestionsRecyclerView.visibility = View.VISIBLE
