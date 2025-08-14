@@ -346,19 +346,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun getDisplayLanguageName(lang: String): String {
         return when (lang) {
-            "en" -> "English"
-            "fr" -> "French"
-            "ja" -> "Japanese"
-            "es" -> "Spanish"
-            "de" -> "German"
-            "it" -> "Italian"
-            "pt" -> "Portuguese"
-            "ru" -> "Russian"
-            "zh" -> "Chinese"
-            "ar" -> "Arabic"
-            "hi" -> "Hindi"
-            "ko" -> "Korean"
-            else -> lang.uppercase()
+            when (lang) {
+                "en" -> "English"
+                "fr" -> "French"
+                "ja" -> "Japanese"
+                "es" -> "Spanish"
+                "de" -> "German"
+                "it" -> "Italian"
+                "pt" -> "Portuguese"
+                "ru" -> "Russian"
+                "zh" -> "Chinese"
+                "ar" -> "Arabic"
+                "hi" -> "Hindi"
+                "ko" -> "Korean"
+                else -> lang.uppercase()
+            }
         }
     }
 
@@ -630,8 +632,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMissingArticleMessage(webView: WebView?, lang: String) {
-        val languageName = getDisplayLanguageName(lang)
-        val message = "The $languageName Wikipedia is waiting for someone to write an article on that topic."
+        val message = "The $lang Wikipedia is waiting for someone to write an article on that topic."
         val htmlContent = """
             <html>
                 <body>
