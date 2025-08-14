@@ -340,12 +340,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun getDisplayLanguageNames(): List<String> {
         return displayLanguages.map { lang ->
-            getDisplayLanguageName(lang)
-        }
-    }
-
-    private fun getDisplayLanguageName(lang: String): String {
-        return when (lang) {
             when (lang) {
                 "en" -> "English"
                 "fr" -> "French"
