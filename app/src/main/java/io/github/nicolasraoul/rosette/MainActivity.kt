@@ -634,21 +634,6 @@ class MainActivity : AppCompatActivity() {
         val message = "The $languageName Wikipedia is waiting for someone to write an article on that topic."
         val htmlContent = """
             <html>
-                <head>
-                    <style>
-                        body {
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            height: 100vh;
-                            margin: 0;
-                            font-family: sans-serif;
-                            text-align: center;
-                            padding: 20px;
-                            color: #888;
-                        }
-                    </style>
-                </head>
                 <body>
                     <p>$message</p>
                 </body>
