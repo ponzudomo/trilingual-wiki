@@ -625,6 +625,18 @@ class MainActivity : AppCompatActivity() {
         return null
     }
 
+    private fun showMissingArticleMessage(webView: WebView?, lang: String) {
+        val message = "The $lang Wikipedia is waiting for someone to write an article on that topic."
+        val htmlContent = """
+            <html>
+                <body>
+                    <p>$message</p>
+                </body>
+            </html>
+        """.trimIndent()
+        webView?.loadData(htmlContent, "text/html; charset=utf-8", "UTF-8")
+    }
+
     private fun performFullSearch(searchTerm: String, sitelinks: Map<String, String>? = null, wikidataId: String? = null) {
         Log.d(TAG, "performFullSearch: Starting a new search for '$searchTerm'. Wikidata ID: $wikidataId")
         this.currentWikidataId.value = wikidataId
@@ -650,8 +662,8 @@ class MainActivity : AppCompatActivity() {
                         webView?.loadUrl(getWikipediaPageUrl(lang, title))
                     } else {
                         pagesToLoad++
-                        Log.d(TAG, "performFullSearch (with sitelinks): No translation for $lang, loading search page.")
-                        webView?.loadUrl(getWikipediaBaseUrl(lang) + "/w/index.php?title=Special:Search&search=${searchTerm.replace(" ", "_")}")
+                        Log.d(TAG, "performFullSearch (with sitelinks): No translation for $lang, showing message.")
+                        showMissingArticleMessage(webView, lang)
                     }
                 }
             } else {
@@ -687,8 +699,8 @@ class MainActivity : AppCompatActivity() {
                         webView?.loadUrl(getWikipediaPageUrl(lang, title))
                     } else {
                         pagesToLoad++
-                        Log.d(TAG, "performFullSearch: No translation for $lang, loading search page.")
-                        webView?.loadUrl(getWikipediaBaseUrl(lang) + "/w/index.php?title=Special:Search&search=${finalTitleFromSource.replace(" ", "_")}")
+                        Log.d(TAG, "performFullSearch (no sitelinks): No translation for $lang, showing message.")
+                        showMissingArticleMessage(webView, lang)
                     }
                 }
             }
