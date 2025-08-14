@@ -63,6 +63,7 @@ class MainActivity : AppCompatActivity() {
     private var searchJob: Job? = null
     private var programmaticTextChange = false
     private var isConfigurationChanging = false
+    private var isRestoringFromConfigChange = false
 
     private var isProgrammaticLoad = false
     private var pagesToLoad = 0
@@ -132,7 +133,7 @@ class MainActivity : AppCompatActivity() {
 
         searchBar.setOnFocusChangeListener { view, hasFocus ->
             Log.d(TAG, "SearchBar focus changed: $hasFocus")
-            if (!hasFocus && suggestionsRecyclerView.visibility == View.VISIBLE && !isConfigurationChanging) {
+            if (!hasFocus && suggestionsRecyclerView.visibility == View.VISIBLE && !isConfigurationChanging && !isRestoringFromConfigChange) {
                 Log.d(TAG, "SearchBar lost focus, hiding suggestions")
                 suggestionsRecyclerView.visibility = View.GONE
             }
@@ -154,7 +155,7 @@ class MainActivity : AppCompatActivity() {
 
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (suggestionsRecyclerView.visibility == View.VISIBLE && !isConfigurationChanging) {
+                if (suggestionsRecyclerView.visibility == View.VISIBLE && !isConfigurationChanging && !isRestoringFromConfigChange) {
                     suggestionsRecyclerView.visibility = View.GONE
                 } else if (webViewMap.values.any { it.canGoBack() }) {
                     webViewMap.values.forEach { if (it.canGoBack()) it.goBack() }
@@ -170,7 +171,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "onCreate: Activity creation complete.")
 
         mainLayout.setOnTouchListener { _, _ ->
-            if (suggestionsRecyclerView.visibility == View.VISIBLE && !isConfigurationChanging) {
+            if (suggestionsRecyclerView.visibility == View.VISIBLE && !isConfigurationChanging && !isRestoringFromConfigChange) {
                 suggestionsRecyclerView.visibility = View.GONE
                 hideKeyboard()
                 searchBar.clearFocus()
@@ -186,8 +187,9 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "onConfigurationChanged: Search bar has focus: ${searchBar.hasFocus()}")
         Log.d(TAG, "onConfigurationChanged: Suggestions visible: ${suggestionsRecyclerView.visibility == View.VISIBLE}")
         
-        // Set flag to prevent search functionality during configuration change
+        // Set flags to prevent search functionality during and after configuration change
         isConfigurationChanging = true
+        isRestoringFromConfigChange = true
         
         // Cancel any ongoing search to prevent dropdown from appearing
         searchJob?.cancel()
@@ -205,11 +207,24 @@ class MainActivity : AppCompatActivity() {
             hideKeyboard()
         }
         
-        // Reset the flag after a delay to allow configuration change to complete
+        // Clear search bar text to prevent state restoration from triggering search
+        val currentText = searchBar.text.toString()
+        if (currentText.isNotEmpty()) {
+            Log.d(TAG, "onConfigurationChanged: Clearing search bar text to prevent restoration triggers")
+            programmaticTextChange = true
+            searchBar.setText("")
+        }
+        
+        // Reset the flags after a longer delay to allow configuration change to complete
         lifecycleScope.launch {
-            delay(500) // Give time for configuration change to complete
+            delay(1500) // Longer delay to account for complex configuration changes like theme switches
             isConfigurationChanging = false
             Log.d(TAG, "onConfigurationChanged: Reset configuration changing flag")
+            
+            // Additional delay for restoration flag to handle state restoration
+            delay(500)
+            isRestoringFromConfigChange = false
+            Log.d(TAG, "onConfigurationChanged: Reset restoration flag")
         }
     }
 
@@ -219,6 +234,21 @@ class MainActivity : AppCompatActivity() {
             val bundle = Bundle()
             webView.saveState(bundle)
             outState.putBundle("webView$key", bundle)
+        }
+    }
+    
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        Log.d(TAG, "onRestoreInstanceState: Restoring instance state")
+        
+        // Set flag to prevent search functionality during state restoration
+        isRestoringFromConfigChange = true
+        
+        // Reset the flag after a delay to allow state restoration to complete
+        lifecycleScope.launch {
+            delay(1000) // Give time for state restoration to complete
+            isRestoringFromConfigChange = false
+            Log.d(TAG, "onRestoreInstanceState: Reset restoration flag")
         }
     }
 
@@ -242,8 +272,8 @@ class MainActivity : AppCompatActivity() {
                     return
                 }
                 
-                if (isConfigurationChanging) {
-                    Log.d(TAG, "TextWatcher: Ignoring text change during configuration change")
+                if (isConfigurationChanging || isRestoringFromConfigChange) {
+                    Log.d(TAG, "TextWatcher: Ignoring text change during configuration change or restoration (config: $isConfigurationChanging, restore: $isRestoringFromConfigChange)")
                     return
                 }
                 
@@ -258,9 +288,9 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "TextWatcher: Starting search job for: '$searchText'")
                 searchJob = lifecycleScope.launch {
                     delay(300) // Debounce
-                    // Double-check the flag in case configuration changed during delay
-                    if (isConfigurationChanging) {
-                        Log.d(TAG, "TextWatcher: Configuration changing during search, aborting")
+                    // Double-check the flags in case configuration changed during delay
+                    if (isConfigurationChanging || isRestoringFromConfigChange) {
+                        Log.d(TAG, "TextWatcher: Configuration changing or restoring during search, aborting (config: $isConfigurationChanging, restore: $isRestoringFromConfigChange)")
                         return@launch
                     }
                     Log.d(TAG, "TextWatcher: Showing suggestions and performing search")

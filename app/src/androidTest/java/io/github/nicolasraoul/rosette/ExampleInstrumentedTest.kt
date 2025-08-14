@@ -55,10 +55,13 @@ class ExampleInstrumentedTest {
             
             // Verify search bar focus is cleared
             assertFalse(searchBar.hasFocus())
+            
+            // Verify search bar text is cleared to prevent restoration triggers
+            assertEquals("", searchBar.text.toString())
         }
         
-        // Wait for the configuration change flag to reset
-        Thread.sleep(600)
+        // Wait for the configuration change and restoration flags to reset
+        Thread.sleep(2100) // Wait for both delays (1500 + 500 + buffer)
         
         // Verify that search functionality works normally after configuration change
         activity.runOnUiThread {
