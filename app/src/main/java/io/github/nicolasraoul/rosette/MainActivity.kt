@@ -189,6 +189,8 @@ class MainActivity : AppCompatActivity() {
             webViewMap.forEach { (key, webView) ->
                 savedInstanceState.getBundle("webView$key")?.let { webView.restoreState(it) }
             }
+            savedInstanceState.getString("currentWikidataId")?.let { currentWikidataId.value = it }
+            savedInstanceState.getString("searchBarText")?.let { searchBar.setText(it) }
         } else {
             Log.d(TAG, "onCreate: No saved instance state, loading initial URLs.")
             isProgrammaticLoad = true
@@ -327,6 +329,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+
+        // Trigger a resize event in the WebViews to force reflow
+        webViewMap.values.forEach { webView ->
+            webView.evaluateJavascript("window.dispatchEvent(new Event('resize'));", null)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -336,6 +343,8 @@ class MainActivity : AppCompatActivity() {
             webView.saveState(bundle)
             outState.putBundle("webView$key", bundle)
         }
+        outState.putString("currentWikidataId", currentWikidataId.value)
+        outState.putString("searchBarText", searchBar.text.toString())
     }
 
     private fun getDisplayLanguageNames(): List<String> {
