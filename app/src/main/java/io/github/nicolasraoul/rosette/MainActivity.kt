@@ -191,6 +191,8 @@ class MainActivity : AppCompatActivity() {
             webViewMap.forEach { (key, webView) ->
                 savedInstanceState.getBundle("webView$key")?.let { webView.restoreState(it) }
             }
+            savedInstanceState.getString("currentWikidataId")?.let { currentWikidataId.value = it }
+            savedInstanceState.getString("searchBarText")?.let { searchBar.setText(it) }
         } else {
             Log.d(TAG, "onCreate: No saved instance state, loading initial URLs.")
             isProgrammaticLoad = true
@@ -390,21 +392,8 @@ class MainActivity : AppCompatActivity() {
             webView.saveState(bundle)
             outState.putBundle("webView$key", bundle)
         }
-    }
-    
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        Log.d(TAG, "onRestoreInstanceState: Restoring instance state")
-        
-        // Set flag to prevent search functionality during state restoration
-        isRestoringFromConfigChange = true
-        
-        // Reset the flag after a delay to allow state restoration to complete
-        lifecycleScope.launch {
-            delay(1000) // Give time for state restoration to complete
-            isRestoringFromConfigChange = false
-            Log.d(TAG, "onRestoreInstanceState: Reset restoration flag")
-        }
+        outState.putString("currentWikidataId", currentWikidataId.value)
+        outState.putString("searchBarText", searchBar.text.toString())
     }
 
     private fun getDisplayLanguageNames(): List<String> {
@@ -424,6 +413,21 @@ class MainActivity : AppCompatActivity() {
                 "ko" -> "Korean"
                 else -> lang.uppercase()
             }
+        }
+    }
+    
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        Log.d(TAG, "onRestoreInstanceState: Restoring instance state")
+        
+        // Set flag to prevent search functionality during state restoration
+        isRestoringFromConfigChange = true
+        
+        // Reset the flag after a delay to allow state restoration to complete
+        lifecycleScope.launch {
+            delay(1000) // Give time for state restoration to complete
+            isRestoringFromConfigChange = false
+            Log.d(TAG, "onRestoreInstanceState: Reset restoration flag")
         }
     }
 
@@ -710,6 +714,18 @@ class MainActivity : AppCompatActivity() {
         return null
     }
 
+    private fun showMissingArticleMessage(webView: WebView?, lang: String) {
+        val message = "The $lang Wikipedia is waiting for someone to write an article on that topic."
+        val htmlContent = """
+            <html>
+                <body>
+                    <p>$message</p>
+                </body>
+            </html>
+        """.trimIndent()
+        webView?.loadData(htmlContent, "text/html; charset=utf-8", "UTF-8")
+    }
+
     private fun performFullSearch(searchTerm: String, sitelinks: Map<String, String>? = null, wikidataId: String? = null) {
         Log.d(TAG, "performFullSearch: Starting a new search for '$searchTerm'. Wikidata ID: $wikidataId")
         this.currentWikidataId.value = wikidataId
@@ -735,8 +751,8 @@ class MainActivity : AppCompatActivity() {
                         webView?.loadUrl(getWikipediaPageUrl(lang, title))
                     } else {
                         pagesToLoad++
-                        Log.d(TAG, "performFullSearch (with sitelinks): No translation for $lang, loading search page.")
-                        webView?.loadUrl(getWikipediaBaseUrl(lang) + "/w/index.php?title=Special:Search&search=${searchTerm.replace(" ", "_")}")
+                        Log.d(TAG, "performFullSearch (with sitelinks): No translation for $lang, showing message.")
+                        showMissingArticleMessage(webView, lang)
                     }
                 }
             } else {
@@ -772,8 +788,8 @@ class MainActivity : AppCompatActivity() {
                         webView?.loadUrl(getWikipediaPageUrl(lang, title))
                     } else {
                         pagesToLoad++
-                        Log.d(TAG, "performFullSearch: No translation for $lang, loading search page.")
-                        webView?.loadUrl(getWikipediaBaseUrl(lang) + "/w/index.php?title=Special:Search&search=${finalTitleFromSource.replace(" ", "_")}")
+                        Log.d(TAG, "performFullSearch (no sitelinks): No translation for $lang, showing message.")
+                        showMissingArticleMessage(webView, lang)
                     }
                 }
             }
