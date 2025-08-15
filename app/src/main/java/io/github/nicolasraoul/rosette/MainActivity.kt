@@ -327,6 +327,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+
+        // Trigger a resize event in the WebViews to force reflow
+        webViewMap.values.forEach { webView ->
+            webView.evaluateJavascript("window.dispatchEvent(new Event('resize'));", null)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
