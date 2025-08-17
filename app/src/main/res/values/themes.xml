@@ -1,7 +1,16 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Base.Theme.TrilingualWiki" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowLightStatusBar">true</item>
+        <item name="textAppearanceSmallPopupMenu">@style/MyPopupMenuTextAppearanceSmall</item>
+        <item name="textAppearanceLargePopupMenu">@style/MyPopupMenuTextAppearanceLarge</item>
     </style>
 
     <style name="Theme.TrilingualWiki" parent="Base.Theme.TrilingualWiki" />
+
+    <style name="MyPopupMenuTextAppearanceSmall" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">@color/black</item>
+    </style>
+    <style name="MyPopupMenuTextAppearanceLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textColor">@color/black</item>
+    </style>
 </resources>
