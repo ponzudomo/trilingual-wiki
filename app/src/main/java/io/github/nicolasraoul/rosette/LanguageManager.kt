@@ -14,7 +14,8 @@ class LanguageManager(private val context: Context) {
         private const val PREFS_NAME = "language_preferences"
         private const val KEY_DISPLAY_LANGUAGES = "display_languages"
         private const val KEY_SEARCH_PRIORITY_LANGUAGES = "search_priority_languages"
-        
+        private const val KEY_LAST_WIKIDATA_ID = "last_wikidata_id"
+
         // Default languages - same as original hardcoded values
         private val DEFAULT_DISPLAY_LANGUAGES = arrayOf("en", "fr", "ja")
         private val DEFAULT_SEARCH_PRIORITY_LANGUAGES = arrayOf("fr", "ja", "en")
@@ -111,6 +112,23 @@ class LanguageManager(private val context: Context) {
      */
     fun hasCustomLanguages(): Boolean {
         return preferences.contains(KEY_DISPLAY_LANGUAGES)
+    }
+
+    /**
+     * Save the Wikidata ID of the last visited article.
+     */
+    fun saveLastWikidataId(wikidataId: String) {
+        preferences.edit()
+            .putString(KEY_LAST_WIKIDATA_ID, wikidataId)
+            .apply()
+        Log.d(TAG, "Saved last Wikidata ID: $wikidataId")
+    }
+
+    /**
+     * Get the Wikidata ID of the last visited article.
+     */
+    fun getLastWikidataId(): String? {
+        return preferences.getString(KEY_LAST_WIKIDATA_ID, null)
     }
 }
 

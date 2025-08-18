@@ -118,6 +118,14 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        lifecycleScope.launch {
+            currentWikidataId.collect { wikidataId ->
+                if (wikidataId != null) {
+                    languageManager.saveLastWikidataId(wikidataId)
+                }
+            }
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -194,12 +202,28 @@ class MainActivity : AppCompatActivity() {
             savedInstanceState.getString("currentWikidataId")?.let { currentWikidataId.value = it }
             savedInstanceState.getString("searchBarText")?.let { searchBar.setText(it) }
         } else {
-            Log.d(TAG, "onCreate: No saved instance state, loading initial URLs.")
-            isProgrammaticLoad = true
-            pagesToLoad = displayLanguages.size
-            webViewMap.forEach { (lang, webView) ->
-                Log.d(TAG, "onCreate: Loading initial URL for $lang WebView.")
-                webView.loadUrl(getWikipediaBaseUrl(lang))
+            val lastWikidataId = languageManager.getLastWikidataId()
+            if (lastWikidataId != null) {
+                Log.d(TAG, "onCreate: Found last visited article with Wikidata ID: $lastWikidataId")
+                lifecycleScope.launch {
+                    val claimsResponse = wikipediaApiService.getEntityClaims(ids = lastWikidataId)
+                    if (claimsResponse.isSuccessful) {
+                        val entity = claimsResponse.body()?.entities?.get(lastWikidataId)
+                        val sitelinks = entity?.sitelinks?.mapValues { it.value.title }
+                        val label = entity?.labels?.get("en")?.value ?: "Unknown Title"
+                        if (sitelinks != null) {
+                            performFullSearch(label, sitelinks, lastWikidataId)
+                        } else {
+                            performFullSearch(label, wikidataId = lastWikidataId)
+                        }
+                    } else {
+                        // Fallback to default if API call fails
+                        loadDefaultPages()
+                    }
+                }
+            } else {
+                Log.d(TAG, "onCreate: No last visited article found, loading initial URLs.")
+                loadDefaultPages()
             }
         }
 
@@ -699,6 +723,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun getWikipediaBaseUrl(lang: String): String = "https://$lang.m.wikipedia.org"
     private fun getWikipediaPageUrl(lang: String, title: String): String = "https://$lang.m.wikipedia.org/wiki/${title.replace(" ", "_")}"
+
+    private fun loadDefaultPages() {
+        isProgrammaticLoad = true
+        pagesToLoad = displayLanguages.size
+        webViewMap.forEach { (lang, webView) ->
+            Log.d(TAG, "loadDefaultPages: Loading initial URL for $lang WebView.")
+            webView.loadUrl(getWikipediaBaseUrl(lang))
+        }
+    }
 
     private fun hideKeyboard() {
         val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
