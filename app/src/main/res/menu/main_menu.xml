@@ -12,6 +12,11 @@
         android:icon="@android:drawable/ic_menu_sort_by_size"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/action_home"
+        android:icon="@android:drawable/ic_menu_revert"
+        android:title="@string/action_home"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_bookmarks"
         android:title="@string/action_bookmarks"
         app:showAsAction="never" />
