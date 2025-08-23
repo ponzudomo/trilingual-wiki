@@ -928,6 +928,10 @@ class MainActivity : AppCompatActivity() {
                 if (e is CancellationException) throw e
                 Log.e(TAG, "Error during random article search attempt $attempts on $lang.wikipedia.org", e)
             }
+
+            if (nextRandomLanguageIndex == 0) {
+                delay(1000)
+            }
         }
 
         Log.w(TAG, "Could not find random article after $maxAttempts attempts")
