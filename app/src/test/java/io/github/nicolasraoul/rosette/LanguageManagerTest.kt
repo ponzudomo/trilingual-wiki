@@ -80,4 +80,36 @@ class LanguageManagerTest {
         val languageJa = WikipediaLanguage("ja", "Japanese", "日本語")
         assertEquals("Japanese (日本語)", languageJa.toString())
     }
+
+    @Test
+    fun testSaveAndGetLastWikidataId() {
+        val mockContext = mock(Context::class.java)
+        val mockSharedPreferences = mock(SharedPreferences::class.java)
+        val mockEditor = mock(SharedPreferences.Editor::class.java)
+        
+        `when`(mockContext.getSharedPreferences(anyString(), anyInt())).thenReturn(mockSharedPreferences)
+        `when`(mockSharedPreferences.edit()).thenReturn(mockEditor)
+        `when`(mockEditor.putString(anyString(), anyString())).thenReturn(mockEditor)
+        `when`(mockEditor.apply()).then { }
+        
+        val languageManager = LanguageManager(mockContext)
+        
+        // Test saving a Wikidata ID
+        val testWikidataId = "Q12345"
+        languageManager.saveLastWikidataId(testWikidataId)
+        
+        // Verify the save operation was called with correct parameters
+        verify(mockEditor).putString("last_wikidata_id", testWikidataId)
+        verify(mockEditor).apply()
+        
+        // Test retrieving the Wikidata ID
+        `when`(mockSharedPreferences.getString("last_wikidata_id", null)).thenReturn(testWikidataId)
+        val retrievedId = languageManager.getLastWikidataId()
+        assertEquals(testWikidataId, retrievedId)
+        
+        // Test when no Wikidata ID is saved
+        `when`(mockSharedPreferences.getString("last_wikidata_id", null)).thenReturn(null)
+        val nullId = languageManager.getLastWikidataId()
+        assertNull(nullId)
+    }
 }
