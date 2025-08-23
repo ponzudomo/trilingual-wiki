@@ -86,6 +86,7 @@ class MainActivity : AppCompatActivity() {
     private val currentWikidataId = MutableStateFlow<String?>(null)
     private lateinit var isBookmarked: StateFlow<Boolean>
     private var bookmarkMenuItem: MenuItem? = null
+    private var nextRandomLanguageIndex = 0
 
     private val wikipediaApiService = RetrofitClient.wikipediaApiService
     private val bookmarkDao by lazy {
@@ -856,91 +857,81 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun performRandomArticleSearch() {
         updateStatus(getString(R.string.loading_random_article))
-        val maxAttempts = 5 // Limit attempts to avoid infinite loops
+        val maxAttempts = displayLanguages.size * 2 // Try each language twice
         var attempts = 0
 
         while (attempts < maxAttempts) {
             attempts++
-            Log.d(TAG, "Random article search attempt $attempts/$maxAttempts")
+            val lang = displayLanguages[nextRandomLanguageIndex]
+            nextRandomLanguageIndex = (nextRandomLanguageIndex + 1) % displayLanguages.size
+            Log.d(TAG, "Random article search attempt $attempts/$maxAttempts on $lang.wikipedia.org")
 
             try {
-                // Get batch of random articles from English Wikipedia
-                val randomResponse = wikipediaApiService.getRandomWikipediaArticles(rnlimit = 10)
+                val baseUrlForApi = "https://$lang.wikipedia.org/w/api.php"
+                val randomResponse = wikipediaApiService.getRandomWikipediaArticles(baseUrl = baseUrlForApi)
                 if (!randomResponse.isSuccessful) {
-                    Log.e(TAG, "Failed to get random articles: ${randomResponse.code()}")
+                    Log.e(TAG, "Failed to get random article from $lang.wikipedia.org: ${randomResponse.code()}")
                     continue
                 }
 
-                val randomArticles = randomResponse.body()?.query?.random
-                if (randomArticles.isNullOrEmpty()) {
-                    Log.w(TAG, "No random articles returned")
+                val randomArticle = randomResponse.body()?.query?.random?.firstOrNull()
+                if (randomArticle == null) {
+                    Log.w(TAG, "No random article returned from $lang.wikipedia.org")
                     continue
                 }
 
-                // Try each random article to see if it has translations in all our languages
-                for (article in randomArticles) {
-                    Log.d(TAG, "Checking random article: ${article.title}")
-                    
-                    // Get Wikidata ID for this English article
-                    val wikidataId = getWikidataIdForTitle("en", article.title)
-                    if (wikidataId == null) {
-                        Log.d(TAG, "No Wikidata ID found for ${article.title}")
-                        continue
-                    }
+                Log.d(TAG, "Checking random article: ${randomArticle.title} from $lang.wikipedia.org")
 
-                    // Get sitelinks for this Wikidata entity
-                    val claimsResponse = wikipediaApiService.getEntityClaims(ids = wikidataId)
-                    if (!claimsResponse.isSuccessful) {
-                        Log.d(TAG, "Failed to get entity claims for $wikidataId")
-                        continue
-                    }
-
-                    val entity = claimsResponse.body()?.entities?.get(wikidataId)
-                    val sitelinks = entity?.sitelinks?.mapValues { it.value.title }
-                    
-                    if (sitelinks == null) {
-                        Log.d(TAG, "No sitelinks found for $wikidataId")
-                        continue
-                    }
-
-                    // Check if all our display languages have articles
-                    val hasAllLanguages = displayLanguages.all { lang ->
-                        val siteKey = "${lang}wiki"
-                        val hasArticle = sitelinks.containsKey(siteKey)
-                        Log.d(TAG, "Language $lang (${siteKey}): ${if (hasArticle) "✓" else "✗"}")
-                        hasArticle
-                    }
-
-                    if (hasAllLanguages) {
-                        Log.d(TAG, "Found suitable random article: ${article.title} (Wikidata: $wikidataId)")
-                        val label = entity.labels?.get("en")?.value ?: article.title
-                        
-                        // Clear search bar and hide suggestions
-                        programmaticTextChange = true
-                        searchBar.setText("")
-                        suggestionsRecyclerView.visibility = View.GONE
-                        hideKeyboard()
-                        searchBar.clearFocus()
-                        
-                        // Perform the search with this article
-                        performFullSearch(label, sitelinks, wikidataId)
-                        return
-                    } else {
-                        Log.d(TAG, "Article ${article.title} doesn't have translations in all required languages")
-                    }
+                val wikidataId = getWikidataIdForTitle(lang, randomArticle.title)
+                if (wikidataId == null) {
+                    Log.d(TAG, "No Wikidata ID found for ${randomArticle.title}")
+                    continue
                 }
 
-                Log.d(TAG, "No suitable articles found in this batch, trying again...")
+                val claimsResponse = wikipediaApiService.getEntityClaims(ids = wikidataId)
+                if (!claimsResponse.isSuccessful) {
+                    Log.d(TAG, "Failed to get entity claims for $wikidataId")
+                    continue
+                }
+
+                val entity = claimsResponse.body()?.entities?.get(wikidataId)
+                val sitelinks = entity?.sitelinks?.mapValues { it.value.title }
+
+                if (sitelinks == null) {
+                    Log.d(TAG, "No sitelinks found for $wikidataId")
+                    continue
+                }
+
+                val hasAllLanguages = displayLanguages.all { displayLang ->
+                    val siteKey = "${displayLang}wiki"
+                    val hasArticle = sitelinks.containsKey(siteKey)
+                    Log.d(TAG, "Language $displayLang (${siteKey}): ${if (hasArticle) "✓" else "✗"}")
+                    hasArticle
+                }
+
+                if (hasAllLanguages) {
+                    Log.d(TAG, "Found suitable random article: ${randomArticle.title} (Wikidata: $wikidataId)")
+                    val label = entity.labels?.get("en")?.value ?: randomArticle.title
+
+                    programmaticTextChange = true
+                    searchBar.setText("")
+                    suggestionsRecyclerView.visibility = View.GONE
+                    hideKeyboard()
+                    searchBar.clearFocus()
+
+                    performFullSearch(label, sitelinks, wikidataId)
+                    return
+                } else {
+                    Log.d(TAG, "Article ${randomArticle.title} doesn't have translations in all required languages")
+                }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                Log.e(TAG, "Error during random article search attempt $attempts", e)
+                Log.e(TAG, "Error during random article search attempt $attempts on $lang.wikipedia.org", e)
             }
         }
 
-        // If we get here, we've exhausted our attempts
         Log.w(TAG, "Could not find random article after $maxAttempts attempts")
         updateStatus(getString(R.string.random_article_not_found))
-        // Hide status after a delay
         lifecycleScope.launch {
             delay(3000)
             statusTextView.visibility = View.GONE
