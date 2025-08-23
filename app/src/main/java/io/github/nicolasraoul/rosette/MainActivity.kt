@@ -871,6 +871,10 @@ class MainActivity : AppCompatActivity() {
                 val randomResponse = wikipediaApiService.getRandomWikipediaArticles(baseUrl = baseUrlForApi)
                 if (!randomResponse.isSuccessful) {
                     Log.e(TAG, "Failed to get random article from $lang.wikipedia.org: ${randomResponse.code()}")
+                    if (randomResponse.code() == 429) {
+                        Log.w(TAG, "Got HTTP 429, waiting 5 seconds.")
+                        delay(5000)
+                    }
                     continue
                 }
 
@@ -929,9 +933,7 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "Error during random article search attempt $attempts on $lang.wikipedia.org", e)
             }
 
-            if (nextRandomLanguageIndex == 0) {
-                delay(1000)
-            }
+            delay(1000)
         }
 
         Log.w(TAG, "Could not find random article after $maxAttempts attempts")
