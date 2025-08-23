@@ -857,7 +857,7 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun performRandomArticleSearch() {
         updateStatus(getString(R.string.loading_random_article))
-        val maxAttempts = displayLanguages.size * 2 // Try each language twice
+        val maxAttempts = 30
         var attempts = 0
 
         while (attempts < maxAttempts) {
@@ -933,7 +933,7 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "Error during random article search attempt $attempts on $lang.wikipedia.org", e)
             }
 
-            delay(1000)
+            delay(2000)
         }
 
         Log.w(TAG, "Could not find random article after $maxAttempts attempts")
