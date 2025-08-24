@@ -61,13 +61,16 @@ interface WikipediaApiService {
         @Query("smtype") smtype: String = "language"
     ): Response<SiteMatrixResponse>
 
-    @GET("https://en.wikipedia.org/w/api.php")
+    @GET
     suspend fun getRandomWikipediaArticles(
+        @Url baseUrl: String,
         @Query("action") action: String = "query",
         @Query("list") list: String = "random",
         @Query("rnnamespace") rnnamespace: Int = 0,
-        @Query("rnlimit") rnlimit: Int = 10,
-        @Query("format") format: String = "json"
+        @Query("rnlimit") rnlimit: Int = 1,
+        @Query("format") format: String = "json",
+        @Query("smaxage") smaxage: Int = 0,
+        @Query("maxage") maxage: Int = 0
     ): Response<RandomArticlesResponse>
 }
 
