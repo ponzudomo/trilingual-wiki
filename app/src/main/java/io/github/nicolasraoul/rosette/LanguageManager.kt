@@ -92,8 +92,8 @@ class LanguageManager(private val context: Context) {
                 }
                 
                 Log.d(TAG, "Parsed ${languages.size} languages from sitematrix")
-                // Sort by English name for better UX
-                return languages.sortedBy { it.englishName }
+                // Sort by English name for better UX (case-insensitive)
+                return languages.sortedBy { it.englishName.lowercase() }
             } else {
                 Log.e(TAG, "API request failed with code: ${response.code()}, message: ${response.message()}")
             }

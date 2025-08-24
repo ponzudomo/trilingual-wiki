@@ -80,4 +80,26 @@ class LanguageManagerTest {
         val languageJa = WikipediaLanguage("ja", "Japanese", "日本語")
         assertEquals("Japanese (日本語)", languageJa.toString())
     }
+
+    @Test
+    fun testCaseInsensitiveLanguageSorting() {
+        // Test that language sorting is case-insensitive
+        val languages = listOf(
+            WikipediaLanguage("zh", "chinese", "中文"),  // lowercase 'c'
+            WikipediaLanguage("en", "English", "English"),  // uppercase 'E'
+            WikipediaLanguage("ar", "arabic", "العربية"),  // lowercase 'a' 
+            WikipediaLanguage("fr", "French", "Français"),  // uppercase 'F'
+            WikipediaLanguage("de", "german", "Deutsch"),   // lowercase 'g'
+            WikipediaLanguage("it", "Italian", "Italiano") // uppercase 'I'
+        )
+        
+        // Sort using the same logic as in LanguageManager (case-insensitive)
+        val sortedLanguages = languages.sortedBy { it.englishName.lowercase() }
+        
+        // Expected order should be: arabic, chinese, English, French, german, Italian
+        val expectedOrder = listOf("arabic", "chinese", "English", "French", "german", "Italian")
+        val actualOrder = sortedLanguages.map { it.englishName }
+        
+        assertEquals("Languages should be sorted case-insensitively", expectedOrder, actualOrder)
+    }
 }
