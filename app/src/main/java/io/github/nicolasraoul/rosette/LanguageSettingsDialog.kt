@@ -3,6 +3,8 @@ package io.github.nicolasraoul.rosette
 import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -21,6 +23,7 @@ class LanguageSettingsDialog : DialogFragment() {
     private lateinit var availableLanguagesAdapter: AvailableLanguagesAdapter
     private lateinit var selectedLanguagesAdapter: SelectedLanguagesAdapter
     private var availableLanguages = mutableListOf<WikipediaLanguage>()
+    private var filteredLanguages = mutableListOf<WikipediaLanguage>()
     private var selectedLanguages = mutableListOf<WikipediaLanguage>()
     private var onLanguagesChanged: (() -> Unit)? = null
 
@@ -44,8 +47,10 @@ class LanguageSettingsDialog : DialogFragment() {
         val selectedRecyclerView = view.findViewById<RecyclerView>(R.id.selected_languages_recycler)
         val loadingIndicator = view.findViewById<ProgressBar>(R.id.loading_indicator)
         val errorText = view.findViewById<TextView>(R.id.error_text)
+        val searchEditText = view.findViewById<EditText>(R.id.search_languages)
         
         setupRecyclerViews(availableRecyclerView, selectedRecyclerView)
+        setupSearchFunctionality(searchEditText)
         loadCurrentLanguages()
         
         // Show loading and fetch languages
@@ -55,6 +60,7 @@ class LanguageSettingsDialog : DialogFragment() {
             try {
                 Log.d(TAG, "Starting to fetch Wikipedia languages...")
                 availableLanguages.clear()
+                filteredLanguages.clear()
                 val fetchedLanguages = languageManager.getAvailableWikipediaLanguages()
                 Log.d(TAG, "Fetched ${fetchedLanguages.size} languages from API")
                 
@@ -65,6 +71,7 @@ class LanguageSettingsDialog : DialogFragment() {
                     errorText.text = "Unable to load language list. There may be an issue with the Wikipedia API or your connection.\n\nTap outside this dialog to close and try reopening the language settings."
                 } else {
                     availableLanguages.addAll(fetchedLanguages)
+                    filteredLanguages.addAll(fetchedLanguages)
                     loadingIndicator.visibility = View.GONE
                     availableLanguagesAdapter.notifyDataSetChanged()
                     updateAvailableLanguages()
@@ -123,6 +130,33 @@ class LanguageSettingsDialog : DialogFragment() {
         selectedRecyclerView.adapter = selectedLanguagesAdapter
     }
 
+    private fun setupSearchFunctionality(searchEditText: EditText) {
+        searchEditText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                filterLanguages(s.toString())
+            }
+        })
+    }
+
+    private fun filterLanguages(query: String) {
+        filteredLanguages.clear()
+        
+        if (query.isBlank()) {
+            filteredLanguages.addAll(availableLanguages)
+        } else {
+            val lowercaseQuery = query.lowercase()
+            filteredLanguages.addAll(availableLanguages.filter { language ->
+                language.englishName.lowercase().contains(lowercaseQuery) ||
+                language.localName.lowercase().contains(lowercaseQuery) ||
+                language.code.lowercase().contains(lowercaseQuery)
+            })
+        }
+        
+        availableLanguagesAdapter.notifyDataSetChanged()
+    }
+
     private fun loadCurrentLanguages() {
         val currentLanguageCodes = languageManager.getDisplayLanguages()
         // We'll populate with actual language objects once we load from API
@@ -148,6 +182,8 @@ class LanguageSettingsDialog : DialogFragment() {
         selectedLanguages.add(language)
         selectedLanguagesAdapter.notifyItemInserted(selectedLanguages.size - 1)
         updateAvailableLanguages()
+        // Refresh the filtered list to update selection state
+        availableLanguagesAdapter.notifyDataSetChanged()
     }
 
     private fun removeLanguage(language: WikipediaLanguage) {
@@ -156,6 +192,8 @@ class LanguageSettingsDialog : DialogFragment() {
             selectedLanguages.removeAt(index)
             selectedLanguagesAdapter.notifyItemRemoved(index)
             updateAvailableLanguages()
+            // Refresh the filtered list to update selection state
+            availableLanguagesAdapter.notifyDataSetChanged()
         }
     }
 
@@ -198,12 +236,12 @@ class LanguageSettingsDialog : DialogFragment() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val language = availableLanguages[position]
+            val language = filteredLanguages[position]
             val isSelected = selectedLanguages.any { it.code == language.code }
             holder.bind(language, isSelected)
         }
 
-        override fun getItemCount(): Int = availableLanguages.size
+        override fun getItemCount(): Int = filteredLanguages.size
 
         inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             private val languageNameText: TextView = itemView.findViewById(R.id.language_name)
