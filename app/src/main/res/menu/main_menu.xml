@@ -7,14 +7,14 @@
         android:icon="@drawable/ic_star"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/action_home"
+        android:icon="@drawable/ic_home"
+        android:title="@string/action_home"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_random"
         android:title="@string/action_random"
         android:icon="@drawable/ic_font_awesome_5_solid_dice_five"
-        app:showAsAction="ifRoom" />
-    <item
-        android:id="@+id/action_home"
-        android:icon="@android:drawable/ic_menu_revert"
-        android:title="@string/action_home"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_bookmarks"
