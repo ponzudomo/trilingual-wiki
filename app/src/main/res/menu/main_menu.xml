@@ -8,7 +8,7 @@
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_home"
-        android:icon="@android:drawable/ic_menu_revert"
+        android:icon="@android:drawable/ic_menu_home"
         android:title="@string/action_home"
         app:showAsAction="ifRoom" />
     <item
