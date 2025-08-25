@@ -20,6 +20,7 @@
     <string name="language_already_selected">Language already selected</string>
     <string name="select_exact_languages">Please select exactly %d languages</string>
     <string name="languages_saved">Languages saved successfully</string>
+    <string name="search_languages_hint">Search languages by name or code...</string>
     
     <!-- Random Article -->
     <string name="action_random">Random Article</string>

@@ -35,6 +35,18 @@
         android:textStyle="bold"
         android:layout_marginBottom="8dp" />
 
+    <EditText
+        android:id="@+id/search_languages"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/search_languages_hint"
+        android:inputType="text"
+        android:maxLines="1"
+        android:imeOptions="actionSearch"
+        android:layout_marginBottom="8dp"
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:drawablePadding="8dp" />
+
     <ProgressBar
         android:id="@+id/loading_indicator"
         android:layout_width="wrap_content"
