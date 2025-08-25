@@ -3,7 +3,11 @@ package io.github.nicolasraoul.rosette
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class LanguageManager(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -15,6 +19,7 @@ class LanguageManager(private val context: Context) {
         private const val KEY_DISPLAY_LANGUAGES = "display_languages"
         private const val KEY_SEARCH_PRIORITY_LANGUAGES = "search_priority_languages"
         private const val KEY_LAST_WIKIDATA_ID = "last_wikidata_id"
+        private const val KEY_ARTICLE_COUNTS = "article_counts"
 
         // Default languages - same as original hardcoded values
         private val DEFAULT_DISPLAY_LANGUAGES = arrayOf("en", "fr", "ja")
@@ -129,6 +134,68 @@ class LanguageManager(private val context: Context) {
      */
     fun getLastWikidataId(): String? {
         return preferences.getString(KEY_LAST_WIKIDATA_ID, null)
+    }
+
+    private suspend fun getWikipediaArticleCount(languageCode: String): Int? {
+        // First, check cache
+        val cachedCounts = getCachedArticleCounts()
+        if (cachedCounts.containsKey(languageCode)) {
+            Log.d(TAG, "Article count for '$languageCode' found in cache: ${cachedCounts[languageCode]}")
+            return cachedCounts[languageCode]
+        }
+
+        // If not in cache, fetch from API
+        return try {
+            val baseUrlForApi = "https://$languageCode.wikipedia.org/w/api.php"
+            val response = wikipediaApiService.getSiteInfo(baseUrl = baseUrlForApi)
+            if (response.isSuccessful) {
+                val articleCount = response.body()?.query?.statistics?.articles
+                if (articleCount != null) {
+                    Log.d(TAG, "Fetched article count for '$languageCode': $articleCount")
+                    // Save to cache
+                    cachedCounts[languageCode] = articleCount
+                    saveArticleCounts(cachedCounts)
+                    articleCount
+                } else {
+                    Log.w(TAG, "Could not parse article count for '$languageCode' from API response.")
+                    null
+                }
+            } else {
+                Log.e(TAG, "API error fetching article count for '$languageCode': ${response.code()}")
+                null
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Log.e(TAG, "Network error fetching article count for '$languageCode'", e)
+            null
+        }
+    }
+
+    suspend fun getDisplayLanguagesSortedByArticleCount(): Array<String> = withContext(Dispatchers.IO) {
+        val languages = getDisplayLanguages()
+        val languageCounts = languages.map { lang ->
+            lang to (getWikipediaArticleCount(lang) ?: Int.MAX_VALUE)
+        }.toMap()
+
+        val sortedLanguages = languages.sortedBy { languageCounts[it] }
+        Log.d(TAG, "Languages sorted by article count: ${sortedLanguages.joinToString()}")
+        sortedLanguages.toTypedArray()
+    }
+
+    private fun getCachedArticleCounts(): MutableMap<String, Int> {
+        val json = preferences.getString(KEY_ARTICLE_COUNTS, null)
+        return if (json != null) {
+            val type = object : TypeToken<MutableMap<String, Int>>() {}.type
+            Gson().fromJson(json, type)
+        } else {
+            mutableMapOf()
+        }
+    }
+
+    private fun saveArticleCounts(counts: Map<String, Int>) {
+        val json = Gson().toJson(counts)
+        preferences.edit().putString(KEY_ARTICLE_COUNTS, json).apply()
+        Log.d(TAG, "Saved article counts to cache.")
     }
 }
 

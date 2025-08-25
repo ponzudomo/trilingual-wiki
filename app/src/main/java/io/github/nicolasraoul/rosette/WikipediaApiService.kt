@@ -72,6 +72,15 @@ interface WikipediaApiService {
         @Query("smaxage") smaxage: Int = 0,
         @Query("maxage") maxage: Int = 0
     ): Response<RandomArticlesResponse>
+
+    @GET
+    suspend fun getSiteInfo(
+        @Url baseUrl: String,
+        @Query("action") action: String = "query",
+        @Query("meta") meta: String = "siteinfo",
+        @Query("siprop") siprop: String = "statistics",
+        @Query("format") format: String = "json"
+    ): Response<SiteInfoResponse>
 }
 
 // Data classes for standard Wikipedia API responses
@@ -175,4 +184,17 @@ data class RandomQueryResponse(
 data class RandomArticle(
     val id: Int,
     val title: String
+)
+
+// Data classes for site info response
+data class SiteInfoResponse(
+    val query: SiteInfoQuery
+)
+
+data class SiteInfoQuery(
+    val statistics: Statistics
+)
+
+data class Statistics(
+    val articles: Int
 )
