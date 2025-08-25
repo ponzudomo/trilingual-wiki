@@ -60,15 +60,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var searchPriorityLanguages: Array<String>
 
     private lateinit var mainLayout: ConstraintLayout
-    private lateinit var webViewEN: WebView
-    private lateinit var webViewFR: WebView
-    private lateinit var webViewJA: WebView
-    private lateinit var webViewMap: Map<String, WebView>
-
-    private lateinit var progressBarEN: ProgressBar
-    private lateinit var progressBarFR: ProgressBar
-    private lateinit var progressBarJA: ProgressBar
-    private lateinit var progressBarMap: Map<WebView, ProgressBar>
+    private lateinit var webviewContainer: LinearLayout
+    private val webViews = mutableListOf<WebView>()
+    private val progressBarMap = mutableMapOf<WebView, ProgressBar>()
 
     private lateinit var searchBar: EditText
     private lateinit var statusTextView: TextView
@@ -140,35 +134,16 @@ class MainActivity : AppCompatActivity() {
         mainLayout = findViewById(R.id.main)
         searchBar = findViewById(R.id.search_bar)
         statusTextView = findViewById(R.id.status_text_view)
-
-        webViewEN = findViewById(R.id.webViewEN)
-        webViewFR = findViewById(R.id.webViewFR)
-        webViewJA = findViewById(R.id.webViewJA)
-
-        progressBarEN = findViewById(R.id.progressBarEN)
-        progressBarFR = findViewById(R.id.progressBarFR)
-        progressBarJA = findViewById(R.id.progressBarJA)
-
+        webviewContainer = findViewById(R.id.webview_container)
         suggestionsRecyclerView = findViewById(R.id.search_suggestions_recycler_view)
 
-        webViewMap = mapOf(
-            displayLanguages[0] to webViewEN,
-            displayLanguages[1] to webViewFR,
-            displayLanguages[2] to webViewJA
-        )
-        progressBarMap = mapOf(
-            webViewEN to progressBarEN,
-            webViewFR to progressBarFR,
-            webViewJA to progressBarJA
-        )
+        createWebViews()
 
         ViewCompat.setOnApplyWindowInsetsListener(mainLayout) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.updatePadding(top = insets.top, bottom = insets.bottom)
             WindowInsetsCompat.CONSUMED
         }
-
-        webViewMap.forEach { (lang, webView) -> setupWebView(webView, lang) }
 
         setupSuggestions()
         setupSearchTextWatcher()
@@ -201,8 +176,8 @@ class MainActivity : AppCompatActivity() {
 
         if (savedInstanceState != null) {
             Log.d(TAG, "onCreate: Restoring instance state.")
-            webViewMap.forEach { (key, webView) ->
-                savedInstanceState.getBundle("webView$key")?.let { webView.restoreState(it) }
+            webViews.forEachIndexed { index, webView ->
+                savedInstanceState.getBundle("webView$index")?.let { webView.restoreState(it) }
             }
             savedInstanceState.getString("currentWikidataId")?.let { currentWikidataId.value = it }
             savedInstanceState.getString("searchBarText")?.let { searchBar.setText(it) }
@@ -254,8 +229,8 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 if (suggestionsRecyclerView.visibility == View.VISIBLE && !isConfigurationChanging && !isRestoringFromConfigChange) {
                     suggestionsRecyclerView.visibility = View.GONE
-                } else if (webViewMap.values.any { it.canGoBack() }) {
-                    webViewMap.values.forEach { if (it.canGoBack()) it.goBack() }
+                } else if (webViews.any { it.canGoBack() }) {
+                    webViews.forEach { if (it.canGoBack()) it.goBack() }
                 } else {
                     if (isEnabled) {
                         isEnabled = false
@@ -366,26 +341,53 @@ class MainActivity : AppCompatActivity() {
         dialog.show(supportFragmentManager, "LanguageSettingsDialog")
     }
 
-    private fun recreateWebViews() {
-        // Recreate the webview mapping with new languages
-        webViewMap = mapOf(
-            displayLanguages[0] to webViewEN,
-            displayLanguages[1] to webViewFR,
-            displayLanguages[2] to webViewJA
-        )
-        
-        // Update WebViewClient for each WebView with new language identifiers
-        webViewMap.forEach { (lang, webView) ->
+    private fun createWebViews() {
+        webviewContainer.removeAllViews()
+        webViews.clear()
+        progressBarMap.clear()
+
+        for (lang in displayLanguages) {
+            val frameLayout = FrameLayout(this)
+            val layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                1f
+            )
+            frameLayout.layoutParams = layoutParams
+
+            val webView = WebView(this)
+            webView.id = View.generateViewId()
+            frameLayout.addView(webView)
+            webViews.add(webView)
+
+            val progressBar = ProgressBar(this)
+            val progressBarLayoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                android.view.Gravity.CENTER
+            )
+            progressBar.layoutParams = progressBarLayoutParams
+            progressBar.visibility = View.GONE
+            frameLayout.addView(progressBar)
+
+            progressBarMap[webView] = progressBar
+            webviewContainer.addView(frameLayout)
+
             setupWebView(webView, lang)
         }
-        
+    }
+
+    private fun recreateWebViews() {
+        createWebViews()
+
         // Reinitialize suggestions adapter with new language names
         setupSuggestions()
-        
+
         // Reload initial pages with new languages
         isProgrammaticLoad = true
         pagesToLoad = displayLanguages.size
-        webViewMap.forEach { (lang, webView) ->
+        webViews.forEachIndexed { index, webView ->
+            val lang = displayLanguages[index]
             Log.d(TAG, "recreateWebViews: Loading initial URL for $lang WebView.")
             webView.loadUrl(getWikipediaBaseUrl(lang))
         }
@@ -441,10 +443,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        webViewMap.forEach { (key, webView) ->
+        webViews.forEachIndexed { index, webView ->
             val bundle = Bundle()
             webView.saveState(bundle)
-            outState.putBundle("webView$key", bundle)
+            outState.putBundle("webView$index", bundle)
         }
         outState.putString("currentWikidataId", currentWikidataId.value)
         outState.putString("searchBarText", searchBar.text.toString())
@@ -753,7 +755,8 @@ class MainActivity : AppCompatActivity() {
     private fun loadDefaultPages() {
         isProgrammaticLoad = true
         pagesToLoad = displayLanguages.size
-        webViewMap.forEach { (lang, webView) ->
+        webViews.forEachIndexed { index, webView ->
+            val lang = displayLanguages[index]
             Log.d(TAG, "loadDefaultPages: Loading initial URL for $lang WebView.")
             webView.loadUrl(getWikipediaBaseUrl(lang))
         }
@@ -816,18 +819,18 @@ class MainActivity : AppCompatActivity() {
             pagesLoaded = 0
 
             progressBarMap.values.forEach { it.visibility = View.VISIBLE }
-            webViewMap.values.forEach { it.visibility = View.INVISIBLE }
+            webViews.forEach { it.visibility = View.INVISIBLE }
 
             if (sitelinks != null) {
                 updateStatus("Loading articles for \"$searchTerm\"...")
-                displayLanguages.forEach { lang ->
-                    val webView = webViewMap[lang]
+                webViews.forEachIndexed { index, webView ->
+                    val lang = displayLanguages[index]
                     val siteKey = "${lang}wiki"
                     val title = sitelinks[siteKey]
                     if (title != null) {
                         pagesToLoad++
                         Log.d(TAG, "performFullSearch (with sitelinks): Loading '$title' in $lang WebView.")
-                        webView?.loadUrl(getWikipediaPageUrl(lang, title))
+                        webView.loadUrl(getWikipediaPageUrl(lang, title))
                     } else {
                         pagesToLoad++
                         Log.d(TAG, "performFullSearch (with sitelinks): No translation for $lang, showing message.")
@@ -858,13 +861,13 @@ class MainActivity : AppCompatActivity() {
                 val langLinksMap = getLangLinksForTitle(sourceLangFound, finalTitleFromSource)
 
                 updateStatus("Loading articles...")
-                displayLanguages.forEach { lang ->
-                    val webView = webViewMap[lang]
+                webViews.forEachIndexed { index, webView ->
+                    val lang = displayLanguages[index]
                     val title = if (lang == sourceLangFound) finalTitleFromSource else langLinksMap?.get(lang)
                     if (title != null) {
                         pagesToLoad++
                         Log.d(TAG, "performFullSearch: Loading '$title' in $lang WebView.")
-                        webView?.loadUrl(getWikipediaPageUrl(lang, title))
+                        webView.loadUrl(getWikipediaPageUrl(lang, title))
                     } else {
                         pagesToLoad++
                         Log.d(TAG, "performFullSearch (no sitelinks): No translation for $lang, showing message.")

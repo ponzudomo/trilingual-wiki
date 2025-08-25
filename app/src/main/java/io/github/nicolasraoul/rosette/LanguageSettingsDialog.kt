@@ -29,7 +29,8 @@ class LanguageSettingsDialog : DialogFragment() {
 
     companion object {
         private const val TAG = "LanguageSettingsDialog"
-        private const val MAX_SELECTED_LANGUAGES = 3
+        private const val MIN_SELECTED_LANGUAGES = 1
+        private const val MAX_SELECTED_LANGUAGES = 5
 
         fun newInstance(onLanguagesChanged: () -> Unit): LanguageSettingsDialog {
             return LanguageSettingsDialog().apply {
@@ -173,12 +174,12 @@ class LanguageSettingsDialog : DialogFragment() {
             Toast.makeText(context, getString(R.string.max_languages_selected, MAX_SELECTED_LANGUAGES), Toast.LENGTH_SHORT).show()
             return
         }
-        
+
         if (selectedLanguages.any { it.code == language.code }) {
             Toast.makeText(context, getString(R.string.language_already_selected), Toast.LENGTH_SHORT).show()
             return
         }
-        
+
         selectedLanguages.add(language)
         selectedLanguagesAdapter.notifyItemInserted(selectedLanguages.size - 1)
         updateAvailableLanguages()
@@ -215,11 +216,11 @@ class LanguageSettingsDialog : DialogFragment() {
     }
 
     private fun saveLanguages() {
-        if (selectedLanguages.size != MAX_SELECTED_LANGUAGES) {
-            Toast.makeText(context, getString(R.string.select_exact_languages, MAX_SELECTED_LANGUAGES), Toast.LENGTH_SHORT).show()
+        if (selectedLanguages.size < MIN_SELECTED_LANGUAGES || selectedLanguages.size > MAX_SELECTED_LANGUAGES) {
+            Toast.makeText(context, getString(R.string.select_between_languages, MIN_SELECTED_LANGUAGES, MAX_SELECTED_LANGUAGES), Toast.LENGTH_SHORT).show()
             return
         }
-        
+
         val languageCodes = selectedLanguages.map { it.code }.toTypedArray()
         languageManager.saveLanguages(languageCodes)
         onLanguagesChanged?.invoke()
