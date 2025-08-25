@@ -17,8 +17,8 @@ class LanguageManager(private val context: Context) {
         private const val KEY_LAST_WIKIDATA_ID = "last_wikidata_id"
 
         // Default languages - same as original hardcoded values
-        private val DEFAULT_DISPLAY_LANGUAGES = arrayOf("en", "fr", "ja")
-        private val DEFAULT_SEARCH_PRIORITY_LANGUAGES = arrayOf("fr", "ja", "en")
+        private val DEFAULT_DISPLAY_LANGUAGES = arrayOf("es", "en")
+        private val DEFAULT_SEARCH_PRIORITY_LANGUAGES = arrayOf("es", "en")
     }
 
     /**
