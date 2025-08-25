@@ -373,6 +373,11 @@ class MainActivity : AppCompatActivity() {
             displayLanguages[2] to webViewJA
         )
         
+        // Update WebViewClient for each WebView with new language identifiers
+        webViewMap.forEach { (lang, webView) ->
+            setupWebView(webView, lang)
+        }
+        
         // Reinitialize suggestions adapter with new language names
         setupSuggestions()
         
