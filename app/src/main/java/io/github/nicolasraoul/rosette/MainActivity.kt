@@ -171,6 +171,7 @@ class MainActivity : AppCompatActivity() {
         webViewMap.forEach { (lang, webView) -> setupWebView(webView, lang) }
 
         setupSuggestions()
+        setupSearchTextWatcher()
 
         isBookmarked = currentWikidataId.flatMapLatest { id ->
             if (id == null) {
@@ -496,7 +497,9 @@ class MainActivity : AppCompatActivity() {
         }, displayLanguageNames)
         suggestionsRecyclerView.layoutManager = LinearLayoutManager(this)
         suggestionsRecyclerView.adapter = suggestionsAdapter
+    }
 
+    private fun setupSearchTextWatcher() {
         searchBar.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 if (programmaticTextChange) {
