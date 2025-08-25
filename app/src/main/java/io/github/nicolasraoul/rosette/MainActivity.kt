@@ -204,8 +204,24 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } else {
-                Log.d(TAG, "onCreate: No last visited article found, loading initial URLs.")
-                loadDefaultPages()
+                Log.d(TAG, "onCreate: No last visited article found, loading Q8171.")
+                lifecycleScope.launch {
+                    val wikidataId = "Q8171"
+                    val claimsResponse = wikipediaApiService.getEntityClaims(ids = wikidataId)
+                    if (claimsResponse.isSuccessful) {
+                        val entity = claimsResponse.body()?.entities?.get(wikidataId)
+                        val sitelinks = entity?.sitelinks?.mapValues { it.value.title }
+                        val label = entity?.labels?.get("en")?.value ?: "Q8171"
+                        if (sitelinks != null) {
+                            performFullSearch(label, sitelinks, wikidataId)
+                        } else {
+                            performFullSearch(label, wikidataId = wikidataId)
+                        }
+                    } else {
+                        // Fallback to default if API call fails
+                        loadDefaultPages()
+                    }
+                }
             }
         }
 
