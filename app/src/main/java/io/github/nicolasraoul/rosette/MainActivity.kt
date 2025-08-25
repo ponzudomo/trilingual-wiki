@@ -121,14 +121,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
-        lifecycleScope.launch {
-            currentWikidataId.collect { wikidataId ->
-                if (wikidataId != null) {
-                    languageManager.saveLastWikidataId(wikidataId)
-                }
-            }
-        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -193,6 +185,15 @@ class MainActivity : AppCompatActivity() {
                 bookmarkMenuItem?.let {
                     val icon = if (bookmarked) R.drawable.ic_star else R.drawable.ic_star_outline
                     it.setIcon(icon)
+                }
+            }
+        }
+
+        // Listen for currentWikidataId changes and save as last visited article
+        lifecycleScope.launch {
+            currentWikidataId.collect { wikidataId ->
+                if (wikidataId != null) {
+                    languageManager.saveLastWikidataId(wikidataId)
                 }
             }
         }
