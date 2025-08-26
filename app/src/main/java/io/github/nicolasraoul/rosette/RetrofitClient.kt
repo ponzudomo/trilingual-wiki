@@ -1,6 +1,7 @@
 package io.github.nicolasraoul.rosette
 
 import android.util.Log
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -17,7 +18,16 @@ object RetrofitClient {
             level = HttpLoggingInterceptor.Level.BASIC
         }
 
+        val userAgentInterceptor = Interceptor { chain ->
+            val originalRequest = chain.request()
+            val requestWithUserAgent = originalRequest.newBuilder()
+                .header("User-Agent", "Rosette/1.7 (https://github.com/nicolas-raoul/trilingual-wiki; nicolas.raoul@gmail.com)")
+                .build()
+            chain.proceed(requestWithUserAgent)
+        }
+
         val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(userAgentInterceptor)
             .addInterceptor(loggingInterceptor)
             .build()
 
