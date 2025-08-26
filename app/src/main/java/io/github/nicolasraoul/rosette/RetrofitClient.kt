@@ -21,7 +21,7 @@ object RetrofitClient {
         val userAgentInterceptor = Interceptor { chain ->
             val originalRequest = chain.request()
             val requestWithUserAgent = originalRequest.newBuilder()
-                .header("User-Agent", "Rosette/1.7 (https://github.com/nicolas-raoul/trilingual-wiki; nicolas.raoul@gmail.com)")
+                .header("User-Agent", "Rosette/1.8 (https://github.com/nicolas-raoul/trilingual-wiki; nicolas.raoul@gmail.com)")
                 .build()
             chain.proceed(requestWithUserAgent)
         }
