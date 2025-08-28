@@ -276,6 +276,11 @@ class MainActivity : AppCompatActivity() {
         // Set initial icon state based on the current value
         val icon = if (isBookmarked.value) R.drawable.ic_star else R.drawable.ic_star_outline
         bookmarkMenuItem?.setIcon(icon)
+        
+        // Set vertical layout checkbox state
+        val verticalLayoutMenuItem = menu?.findItem(R.id.action_vertical_layout)
+        verticalLayoutMenuItem?.isChecked = languageManager.isVerticalLayout()
+        
         return true
     }
 
@@ -340,6 +345,15 @@ class MainActivity : AppCompatActivity() {
                 }
                 true
             }
+            R.id.action_vertical_layout -> {
+                Log.d(TAG, "Vertical layout action clicked")
+                val isCurrentlyVertical = languageManager.isVerticalLayout()
+                val newVerticalState = !isCurrentlyVertical
+                languageManager.saveVerticalLayout(newVerticalState)
+                item.isChecked = newVerticalState
+                recreateWebViews() // Recreate WebViews with new orientation
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -364,13 +378,27 @@ class MainActivity : AppCompatActivity() {
         webViews.clear()
         progressBarMap.clear()
 
+        // Set container orientation based on preference
+        val isVertical = languageManager.isVerticalLayout()
+        webviewContainer.orientation = if (isVertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+
         for (lang in displayLanguages) {
             val frameLayout = FrameLayout(this)
-            val layoutParams = LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                1f
-            )
+            val layoutParams = if (isVertical) {
+                // Vertical layout: equal height distribution
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0,
+                    1f
+                )
+            } else {
+                // Horizontal layout: equal width distribution
+                LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    1f
+                )
+            }
             frameLayout.layoutParams = layoutParams
 
             val webView = WebView(this)

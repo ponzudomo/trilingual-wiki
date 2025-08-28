@@ -20,6 +20,7 @@ class LanguageManager(private val context: Context) {
         private const val KEY_SEARCH_PRIORITY_LANGUAGES = "search_priority_languages"
         private const val KEY_LAST_WIKIDATA_ID = "last_wikidata_id"
         private const val KEY_ARTICLE_COUNTS = "article_counts"
+        private const val KEY_VERTICAL_LAYOUT = "vertical_layout"
 
         // Default languages - same as original hardcoded values
         private val DEFAULT_DISPLAY_LANGUAGES = arrayOf("es", "en")
@@ -134,6 +135,23 @@ class LanguageManager(private val context: Context) {
      */
     fun getLastWikidataId(): String? {
         return preferences.getString(KEY_LAST_WIKIDATA_ID, null)
+    }
+
+    /**
+     * Get the vertical layout preference.
+     */
+    fun isVerticalLayout(): Boolean {
+        return preferences.getBoolean(KEY_VERTICAL_LAYOUT, false)
+    }
+
+    /**
+     * Save the vertical layout preference.
+     */
+    fun saveVerticalLayout(isVertical: Boolean) {
+        preferences.edit()
+            .putBoolean(KEY_VERTICAL_LAYOUT, isVertical)
+            .apply()
+        Log.d(TAG, "Saved vertical layout preference: $isVertical")
     }
 
     private suspend fun getWikipediaArticleCount(languageCode: String): Int? {

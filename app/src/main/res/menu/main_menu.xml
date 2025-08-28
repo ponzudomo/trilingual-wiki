@@ -25,4 +25,9 @@
         android:title="@string/language_settings"
         android:icon="@android:drawable/ic_menu_preferences"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_vertical_layout"
+        android:title="Vertical Layout"
+        android:checkable="true"
+        app:showAsAction="never" />
 </menu>
