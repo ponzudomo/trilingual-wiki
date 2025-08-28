@@ -429,13 +429,32 @@ class MainActivity : AppCompatActivity() {
         // Reinitialize suggestions adapter with new language names
         setupSuggestions()
 
-        // Reload initial pages with new languages
-        isProgrammaticLoad = true
-        pagesToLoad = displayLanguages.size
-        webViews.forEachIndexed { index, webView ->
-            val lang = displayLanguages[index]
-            Log.d(TAG, "recreateWebViews: Loading initial URL for $lang WebView.")
-            webView.loadUrl(getWikipediaBaseUrl(lang))
+        // Check if we have a current article to preserve
+        val currentWikidataIdValue = currentWikidataId.value
+        if (currentWikidataIdValue != null) {
+            // Preserve current article by reloading it
+            Log.d(TAG, "recreateWebViews: Preserving current article with Wikidata ID: $currentWikidataIdValue")
+            lifecycleScope.launch {
+                val claimsResponse = wikipediaApiService.getEntityClaims(ids = currentWikidataIdValue)
+                if (claimsResponse.isSuccessful) {
+                    val entity = claimsResponse.body()?.entities?.get(currentWikidataIdValue)
+                    val sitelinks = entity?.sitelinks?.mapValues { it.value.title }
+                    val label = entity?.labels?.get("en")?.value ?: "Unknown Title"
+                    if (sitelinks != null) {
+                        performFullSearch(label, sitelinks, currentWikidataIdValue)
+                    } else {
+                        performFullSearch(label, wikidataId = currentWikidataIdValue)
+                    }
+                } else {
+                    // Fallback to loading base URLs if API call fails
+                    Log.w(TAG, "recreateWebViews: Failed to fetch article data, falling back to base URLs")
+                    loadDefaultPages()
+                }
+            }
+        } else {
+            // No current article, load default pages (original behavior)
+            Log.d(TAG, "recreateWebViews: No current article, loading default pages")
+            loadDefaultPages()
         }
     }
 
