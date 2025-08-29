@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.text.method.LinkMovementMethod
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
@@ -89,6 +90,8 @@ class MainActivity : AppCompatActivity() {
         (application as RosetteApplication).database.bookmarkDao()
     }
 
+    private lateinit var llmManager: LlmManager
+
     companion object {
         private const val TAG = "MainActivity"
     }
@@ -132,6 +135,8 @@ class MainActivity : AppCompatActivity() {
         // Initialize language manager and load configured languages
         languageManager = LanguageManager(this)
         loadConfiguredLanguages()
+
+        llmManager = LlmManager(this)
 
         mainLayout = findViewById(R.id.main)
         searchBar = findViewById(R.id.search_bar)
@@ -280,6 +285,9 @@ class MainActivity : AppCompatActivity() {
         // Set vertical layout checkbox state
         val verticalLayoutMenuItem = menu?.findItem(R.id.action_vertical_layout)
         verticalLayoutMenuItem?.isChecked = languageManager.isVerticalLayout()
+
+        val askMenuItem = menu?.findItem(R.id.action_ask)
+        askMenuItem?.isVisible = android.os.Build.MODEL.contains("Pixel 10", ignoreCase = true)
         
         return true
     }
@@ -352,6 +360,10 @@ class MainActivity : AppCompatActivity() {
                 languageManager.saveVerticalLayout(newVerticalState)
                 item.isChecked = newVerticalState
                 recreateWebViews() // Recreate WebViews with new orientation
+                true
+            }
+            R.id.action_ask -> {
+                showAskDialog()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -1030,6 +1042,57 @@ class MainActivity : AppCompatActivity() {
             delay(3000)
             statusTextView.visibility = View.GONE
         }
+    }
+
+    private fun showAskDialog() {
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("Ask a question")
+
+        val input = EditText(this)
+        input.hint = "Enter your question here"
+        builder.setView(input)
+
+        builder.setPositiveButton("Ask") { dialog, _ ->
+            val question = input.text.toString()
+            if (question.isNotBlank()) {
+                answerQuestion(question)
+            }
+            dialog.dismiss()
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
+
+        builder.show()
+    }
+
+    private fun answerQuestion(question: String) {
+        // Get article text from the first webview
+        webViews.firstOrNull()?.evaluateJavascript("(function() { return document.body.innerText; })();") { articleText ->
+            lifecycleScope.launch {
+                val result = llmManager.answerQuestion(question, articleText ?: "")
+                result.onSuccess { answer ->
+                    // Show the answer in a dialog
+                    android.app.AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Answer")
+                        .setMessage(answer)
+                        .setPositiveButton("OK", null)
+                        .show()
+                }.onFailure {
+                    showLlmErrorDialog()
+                }
+            }
+        }
+    }
+
+    private fun showLlmErrorDialog() {
+        val message = getText(R.string.aicore_setup_instructions)
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle("AI Core Error")
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+
+        // Make the text view clickable
+        dialog.findViewById<TextView>(android.R.id.message)?.movementMethod = LinkMovementMethod.getInstance()
     }
 }
 
