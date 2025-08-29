@@ -12,7 +12,6 @@ class LlmManager(context: Context) {
     init {
         try {
             generativeModel = GenerativeModel(
-                modelName = "gemini-nano",
                 generationConfig = generationConfig {
                     temperature = 0.7f
                     topK = 40
