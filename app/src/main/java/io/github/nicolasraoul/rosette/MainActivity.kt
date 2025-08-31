@@ -325,26 +325,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 true
             }
-            R.id.action_home -> {
-                Log.d(TAG, "Home action clicked")
-                lifecycleScope.launch {
-                    val wikidataId = "Q5296" // Item for https://en.wikipedia.org/wiki/Main_Page and its equivalents in other languages
-                    val claimsResponse = wikipediaApiService.getEntityClaims(ids = wikidataId)
-                    if (claimsResponse.isSuccessful) {
-                        val entity = claimsResponse.body()?.entities?.get(wikidataId)
-                        val sitelinks = entity?.sitelinks?.mapValues { it.value.title }
-                        val label = entity?.labels?.get("en")?.value ?: "Home"
-                        if (sitelinks != null) {
-                            performFullSearch(label, sitelinks, wikidataId)
-                        } else {
-                            performFullSearch(label, wikidataId = wikidataId)
-                        }
-                    } else {
-                        Toast.makeText(this@MainActivity, "Failed to load home page", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                true
-            }
+
             R.id.action_vertical_layout -> {
                 Log.d(TAG, "Vertical layout action clicked")
                 val isCurrentlyVertical = languageManager.isVerticalLayout()

@@ -6,11 +6,7 @@
         android:title="@string/action_bookmark"
         android:icon="@drawable/ic_star"
         app:showAsAction="ifRoom" />
-    <item
-        android:id="@+id/action_home"
-        android:icon="@drawable/ic_home"
-        android:title="@string/action_home"
-        app:showAsAction="ifRoom" />
+
     <item
         android:id="@+id/action_random"
         android:title="@string/action_random"
