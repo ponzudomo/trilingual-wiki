@@ -363,7 +363,11 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             R.id.action_ask -> {
-                showAskDialog()
+                if (llmManager.isModelAvailable()) {
+                    showAskDialog()
+                } else {
+                    showLlmErrorDialog()
+                }
                 true
             }
             else -> super.onOptionsItemSelected(item)

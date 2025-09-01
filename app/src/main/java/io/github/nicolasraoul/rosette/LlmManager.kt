@@ -5,37 +5,43 @@ import android.util.Log
 import com.google.ai.edge.aicore.GenerativeModel
 import com.google.ai.edge.aicore.generationConfig
 
-class LlmManager(context: Context) {
+class LlmManager(private val context: Context) {
 
-    private var generativeModel: GenerativeModel? = null
+    private val generativeModel: GenerativeModel by lazy {
+        Log.d(TAG, "Initializing GenerativeModel...")
+        GenerativeModel(
+            generationConfig = generationConfig {
+                this.context = this@LlmManager.context.applicationContext
+                temperature = 0.2f
+                topK = 16
+                maxOutputTokens = 256
+            }
+        )
+    }
 
-    init {
-        try {
-            generativeModel = GenerativeModel(
-                generationConfig = generationConfig {
-                    temperature = 0.7f
-                    topK = 40
-                }
-            )
-            Log.d(TAG, "GenerativeModel initialized successfully.")
+    fun isModelAvailable(): Boolean {
+        return try {
+            // Accessing the property will trigger the lazy initialization.
+            // If it throws an exception, we'll catch it and return false.
+            generativeModel
+            Log.d(TAG, "GenerativeModel is available.")
+            true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize generative model", e)
+            Log.e(TAG, "Model is not available", e)
+            false
         }
     }
 
     suspend fun answerQuestion(question: String, articleText: String): Result<String> {
         Log.d(TAG, "Answering question: $question")
         Log.d(TAG, "Article text length: ${articleText.length}")
-        if (generativeModel == null) {
-            Log.e(TAG, "Generative model is not initialized.")
-            return Result.failure(IllegalStateException("AI model is not available"))
-        }
-
-        val prompt = "Article:\n$articleText\n\nQuestion:\n$question\n\nAnswer:"
-        Log.d(TAG, "Prompt: $prompt")
 
         return try {
-            val response = generativeModel!!.generateContent(prompt)
+            val model = generativeModel
+            val prompt = "Article:\n$articleText\n\nQuestion:\n$question\n\nAnswer:"
+            Log.d(TAG, "Prompt: $prompt")
+
+            val response = model.generateContent(prompt)
             val answer = response.text
             if (answer.isNullOrBlank()) {
                 Log.e(TAG, "Failed to get answer from model. Response was null or blank.")
