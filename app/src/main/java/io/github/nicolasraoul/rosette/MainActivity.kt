@@ -43,6 +43,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -1049,23 +1050,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAskDialog() {
-        val builder = android.app.AlertDialog.Builder(this)
-        builder.setTitle("Ask a question")
+        val dialogView = layoutInflater.inflate(R.layout.dialog_ask, null)
+        val questionEditText = dialogView.findViewById<TextInputEditText>(R.id.question_edit_text)
+        questionEditText.setText("Summarize")
 
-        val input = EditText(this)
-        input.hint = "Enter your question here"
-        builder.setView(input)
-
-        builder.setPositiveButton("Ask") { dialog, _ ->
-            val question = input.text.toString()
-            if (question.isNotBlank()) {
-                answerQuestion(question)
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Ask a question")
+            .setView(dialogView)
+            .setPositiveButton("Ask") { dialog, _ ->
+                val question = questionEditText.text.toString()
+                if (question.isNotBlank()) {
+                    answerQuestion(question)
+                }
+                dialog.dismiss()
             }
-            dialog.dismiss()
-        }
-        builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
-
-        builder.show()
+            .setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
+            .show()
     }
 
     private fun answerQuestion(question: String) {
@@ -1098,7 +1098,7 @@ class MainActivity : AppCompatActivity() {
 
         android.app.AlertDialog.Builder(this)
             .setView(dialogView)
-            .setPositiveButton("OK", null)
+            .setPositiveButton("Close", null)
             .show()
     }
 
