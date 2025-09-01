@@ -1069,22 +1069,37 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun answerQuestion(question: String) {
+        val thinkingDialog = android.app.AlertDialog.Builder(this)
+            .setView(R.layout.dialog_thinking)
+            .setCancelable(false)
+            .show()
+
         // Get article text from the first webview
         webViews.firstOrNull()?.evaluateJavascript("(function() { return document.body.innerText; })();") { articleText ->
             lifecycleScope.launch {
                 val result = llmManager.answerQuestion(question, articleText ?: "")
+                thinkingDialog.dismiss()
                 result.onSuccess { answer ->
-                    // Show the answer in a dialog
-                    android.app.AlertDialog.Builder(this@MainActivity)
-                        .setTitle("Answer")
-                        .setMessage(answer)
-                        .setPositiveButton("OK", null)
-                        .show()
+                    showAnswerDialog(question, answer)
                 }.onFailure {
                     showLlmErrorDialog()
                 }
             }
         }
+    }
+
+    private fun showAnswerDialog(question: String, answer: String) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_answer, null)
+        val questionTextView = dialogView.findViewById<TextView>(R.id.question_text_view)
+        val answerTextView = dialogView.findViewById<TextView>(R.id.answer_text_view)
+
+        questionTextView.text = question
+        answerTextView.text = answer
+
+        android.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun showLlmErrorDialog() {
