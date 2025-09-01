@@ -41,7 +41,7 @@ android {
 
 dependencies {
     // Room for database
-    val roomVersion = "2.6.1"
+    val roomVersion = "2.7.2"
     implementation("androidx.room:room-runtime:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
@@ -62,6 +62,9 @@ dependencies {
     // Image loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
     kapt("com.github.bumptech.glide:compiler:4.12.0")
+
+    // Gemini Nano
+    implementation("com.google.ai.edge.aicore:aicore:0.0.1-exp02")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

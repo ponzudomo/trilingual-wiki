@@ -17,6 +17,10 @@
         android:title="@string/action_bookmarks"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_ask"
+        android:title="@string/menu_ask"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_settings"
         android:title="@string/language_settings"
         android:icon="@android:drawable/ic_menu_preferences"
