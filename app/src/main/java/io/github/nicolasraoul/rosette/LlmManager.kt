@@ -12,9 +12,9 @@ class LlmManager(private val context: Context) {
         GenerativeModel(
             generationConfig = generationConfig {
                 this.context = this@LlmManager.context.applicationContext
-                temperature = 0.2f
+                temperature = 0.0f
                 topK = 16
-                maxOutputTokens = 256
+                maxOutputTokens = 256000
             }
         )
     }
