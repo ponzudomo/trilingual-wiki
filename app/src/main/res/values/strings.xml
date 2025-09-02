@@ -21,7 +21,7 @@ Thank you for your patience!
     <string name="action_bookmarks">Bookmarks</string>
 
     <string name="select_languages_title">Select Languages</string>
-    <string name="select_languages_instruction">Select 1 to 5 languages for your multilingual Wikipedia viewer:</string>
+    <string name="select_languages_instruction">Select 1 to 5 languages to read in parallel:</string>
     <string name="selected_languages">Selected Languages:</string>
     <string name="available_languages">Available Languages:</string>
     <string name="save">Save</string>

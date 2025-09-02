@@ -23,7 +23,7 @@
         android:id="@+id/search_bar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Search Wikipedia"
+        android:hint="Search"
         android:imeOptions="actionSearch"
         android:inputType="text"
         app:layout_constraintTop_toBottomOf="@id/toolbar"

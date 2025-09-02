@@ -872,7 +872,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMissingArticleMessage(webView: WebView?, lang: String) {
-        val message = "The $lang Wikipedia is waiting for someone to write an article on that topic."
+        val message = "The $lang edition is waiting for someone to write an article on that topic."
         val htmlContent = """
             <html>
                 <body>
