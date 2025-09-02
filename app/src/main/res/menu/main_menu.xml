@@ -26,6 +26,10 @@
         android:icon="@android:drawable/ic_menu_preferences"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_about"
+        android:title="@string/action_about"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_vertical_layout"
         android:title="Vertical Layout"
         android:checkable="true"

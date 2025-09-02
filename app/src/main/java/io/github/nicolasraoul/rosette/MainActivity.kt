@@ -29,6 +29,7 @@ import android.widget.FrameLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import android.text.util.Linkify
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -350,6 +351,10 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     showLlmErrorDialog()
                 }
+                true
+            }
+            R.id.action_about -> {
+                showAboutDialog()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -1093,6 +1098,25 @@ class MainActivity : AppCompatActivity() {
 
         // Make the text view clickable
         dialog.findViewById<TextView>(android.R.id.message)?.movementMethod = LinkMovementMethod.getInstance()
+    }
+
+    private fun showAboutDialog() {
+        val message = TextView(this)
+        val s = getText(R.string.about_message)
+        message.text = s
+        message.setPadding(50, 50, 50, 50)
+
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle(R.string.action_about)
+            .setView(message)
+            .setPositiveButton(android.R.string.ok, null)
+            .create()
+
+        dialog.show()
+
+        // Make the text view clickable
+        Linkify.addLinks(message, Linkify.WEB_URLS)
+        message.movementMethod = LinkMovementMethod.getInstance()
     }
 }
 

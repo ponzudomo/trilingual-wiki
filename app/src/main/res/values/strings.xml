@@ -40,4 +40,8 @@ Thank you for your patience!
     <string name="action_random">Random Article</string>
     <string name="loading_random_article">Finding random article…</string>
     <string name="random_article_not_found">Could not find a random article with translations in all selected languages. Please try again.</string>
+
+    <!-- About screen -->
+    <string name="action_about">About</string>
+    <string name="about_message">Rosette is developed by Nicolas Raoul.\n\nIf you find any bug, please let me know by filing an issue at https://github.com/nicolas-raoul/trilingual-wiki.\n\nThis app is not endorsed by nor affiliated with the Wikimedia Foundation.</string>
 </resources>
