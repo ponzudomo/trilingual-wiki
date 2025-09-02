@@ -710,14 +710,21 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            // Inject CSS to add padding to prevent text cropping at edges
+            // Inject CSS to add padding to prevent text cropping at edges and hide Wikipedia's top banner
             view?.evaluateJavascript("""
                 (function() {
                     var style = document.createElement('style');
                     style.textContent = 
                         'body { padding-left: 8px !important; padding-right: 8px !important; } ' +
                         '.mw-parser-output { padding-left: 8px !important; padding-right: 8px !important; } ' +
-                        '#content { padding-left: 8px !important; padding-right: 8px !important; }';
+                        '#content { padding-left: 8px !important; padding-right: 8px !important; } ' +
+                        '.minerva-header { display: none !important; } ' +
+                        '.header { display: none !important; } ' +
+                        '.header-container { display: none !important; } ' +
+                        '.page-header { display: none !important; } ' +
+                        '#mw-mf-page-center > .header { display: none !important; } ' +
+                        '.mw-header { display: none !important; } ' +
+                        'body { margin-top: 0 !important; padding-top: 0 !important; }';
                     document.head.appendChild(style);
                 })();
             """, null)
