@@ -141,7 +141,7 @@ class LanguageManager(private val context: Context) {
      * Get the vertical layout preference.
      */
     fun isVerticalLayout(): Boolean {
-        return preferences.getBoolean(KEY_VERTICAL_LAYOUT, false)
+        return preferences.getBoolean(KEY_VERTICAL_LAYOUT, true)
     }
 
     /**
