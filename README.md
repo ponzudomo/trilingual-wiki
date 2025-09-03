@@ -1,1 +1,1 @@
-# Trilingual Wikipedia Viewer
+# Rosette: Trilingual Wikipedia Viewer
