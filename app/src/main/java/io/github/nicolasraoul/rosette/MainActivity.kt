@@ -289,7 +289,8 @@ class MainActivity : AppCompatActivity() {
         verticalLayoutMenuItem?.isChecked = languageManager.isVerticalLayout()
 
         val askMenuItem = menu?.findItem(R.id.action_ask)
-        askMenuItem?.isVisible = android.os.Build.MODEL.contains("Pixel 10", ignoreCase = true)
+        val supportedDevices = resources.getStringArray(R.array.supported_ask_devices)
+        askMenuItem?.isVisible = supportedDevices.any { android.os.Build.MODEL.contains(it, ignoreCase = true) }
         
         return true
     }
