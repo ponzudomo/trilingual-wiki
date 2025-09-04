@@ -937,6 +937,23 @@ class MainActivity : AppCompatActivity() {
         return null
     }
 
+    private fun isDisambiguationPage(entity: EntityClaim?): Boolean {
+        if (entity?.claims == null) return false
+        
+        // Check P31 (instance of) claims for Q4167410 (Wikimedia disambiguation page)
+        val instanceOfClaims = entity.claims["P31"] ?: return false
+        
+        return instanceOfClaims.any { claim ->
+            val dataValue = claim.mainsnak.datavalue?.value
+            // The value might be an object with an "id" field, or just a string
+            when (dataValue) {
+                is Map<*, *> -> (dataValue["id"] as? String) == "Q4167410"
+                is String -> dataValue == "Q4167410"
+                else -> false
+            }
+        }
+    }
+
     private fun checkAllWebViewsLoaded() {
         if (pagesLoaded >= pagesToLoad) {
             isProgrammaticLoad = false
@@ -1156,6 +1173,12 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     if (hasAllLanguages) {
+                        // Check if this is a disambiguation page and skip it
+                        if (isDisambiguationPage(entity)) {
+                            Log.d(TAG, "Skipping disambiguation page: ${randomArticle.title} (Wikidata: $wikidataId)")
+                            return@repeat // Continue to next attempt
+                        }
+                        
                         Log.d(TAG, "Found suitable random article: ${randomArticle.title} (Wikidata: $wikidataId)")
                         val label = entity.labels?.get("en")?.value ?: randomArticle.title
 
