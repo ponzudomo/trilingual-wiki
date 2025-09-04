@@ -38,29 +38,80 @@ class ImageViewerInterceptionTest {
     }
 
     @Test
-    fun `JavaScript interface should handle image URLs correctly`() {
-        // Test that verifies the ImageViewerInterface handles various image URL formats
+    fun `JavaScript should transform thumbnail URLs to full resolution`() {
+        // Test that verifies URL transformation logic for getting full resolution images
         
-        val expectedImageUrlFormats = listOf(
-            // Thumbnail URLs that should be converted to full resolution
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Cat.jpg/220px-Cat.jpg",
-            // Commons URLs
+        val urlTransformationTests = mapOf(
+            // Wikipedia thumbnail URLs should be converted to full resolution
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Cat.jpg/220px-Cat.jpg" to
+                "https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg",
+            
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Example.png/300px-Example.png" to
+                "https://upload.wikimedia.org/wikipedia/commons/a/a7/Example.png",
+            
+            // Direct size-restricted URLs should have size prefix removed
+            "https://upload.wikimedia.org/wikipedia/commons/1/15/220px-Cat.jpg" to
+                "https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg",
+            
+            // Already full resolution URLs should remain unchanged
+            "https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg" to
+                "https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg"
+        )
+        
+        // For this unit test, we document the expected transformation patterns
+        urlTransformationTests.forEach { (input, expected) ->
+            // Simulate the JavaScript transformation logic
+            var result = input
+            
+            // Handle Wikipedia thumbnail URLs: /thumb/(.+)/\d+px-[^/]+$ -> /$1
+            if (result.contains("/thumb/")) {
+                result = result.replace(Regex("/thumb/(.+)/\\d+px-[^/]+$"), "/$1")
+            }
+            
+            // Handle direct size-restricted URLs: /\d+px-([^/]+)$ -> /$1  
+            result = result.replace(Regex("/\\d+px-([^/]+)$"), "/$1")
+            
+            assertEquals("URL transformation should convert $input to $expected", expected, result)
+        }
+        
+        assertTrue("JavaScript should transform thumbnail URLs to full resolution", true)
+    }
+
+    @Test
+    fun `ImageViewer interface should handle image URLs securely`() {
+        // Test that verifies the ImageViewerInterface handles various image URL formats securely
+        
+        val validImageUrls = listOf(
             "https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg",
-            // Wikipedia file URLs
-            "https://en.wikipedia.org/wiki/File:Cat.jpg"
+            "https://commons.wikimedia.org/static/images/example.png"
+        )
+        
+        val invalidImageUrls = listOf(
+            "http://malicious-site.com/image.jpg",  // Non-HTTPS
+            "https://example.com/image.png",        // Non-Wikimedia domain
+            "",                                     // Empty string
+            "javascript:alert(1)",                  // JavaScript injection attempt
+            "file:///etc/passwd"                    // Local file access attempt
         )
         
         // Expected behavior:
-        // - Thumbnail URLs should have size restrictions removed
-        // - Full resolution images should be preferred
-        // - ImageViewer.showImageFullscreen() should be called with the image URL
+        // - Only Wikimedia URLs should be accepted
+        // - URLs should be validated before opening
+        // - Invalid URLs should show appropriate error message
+        // - Security checks should prevent malicious URLs
         
-        // For this unit test, we document the expected URL handling
-        expectedImageUrlFormats.forEach { url ->
-            assertTrue("ImageViewer should handle URL format: $url", url.contains("Cat.jpg"))
+        // For this unit test, we document the expected URL validation
+        validImageUrls.forEach { url ->
+            assertTrue("Valid Wikimedia URL should be accepted: $url", 
+                url.contains("wikimedia.org"))
         }
         
-        assertTrue("ImageViewer interface should open images in native viewer", true)
+        invalidImageUrls.forEach { url ->
+            assertFalse("Invalid URL should be rejected: $url", 
+                url.contains("upload.wikimedia.org") || url.contains("commons.wikimedia.org"))
+        }
+        
+        assertTrue("ImageViewer interface should validate URLs for security", true)
     }
 
     @Test

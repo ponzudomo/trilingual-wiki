@@ -751,18 +751,29 @@ class MainActivity : AppCompatActivity() {
                                 // Get the highest resolution image URL
                                 var imageUrl = img.src;
                                 
-                                // Try to get original image URL from various sources
-                                if (link && link.href) {
-                                    // Try to extract full image URL from Wikipedia file page link
-                                    var filePageUrl = link.href;
-                                    // For now, use the existing image URL but remove size restrictions
+                                // Try to get original image URL by removing size restrictions
+                                // Handle Wikipedia thumbnail URLs like:
+                                // https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Cat.jpg/220px-Cat.jpg
+                                // Should become: https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg
+                                if (imageUrl.includes('/thumb/')) {
                                     imageUrl = imageUrl.replace(/\/thumb\/(.+)\/\d+px-[^\/]+${'$'}/, '/${'$'}1');
-                                    imageUrl = imageUrl.replace(/\/\d+px-[^\/]+${'$'}/, '');
                                 }
                                 
-                                console.log('Opening image natively:', imageUrl);
-                                if (window.ImageViewer) {
-                                    window.ImageViewer.showImageFullscreen(imageUrl);
+                                // Handle direct size-restricted URLs like:
+                                // https://upload.wikimedia.org/wikipedia/commons/1/15/220px-Cat.jpg
+                                // Should become: https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg
+                                imageUrl = imageUrl.replace(/\/\d+px-([^\/]+)${'$'}/, '/${'$'}1');
+                                
+                                // Validate URL before passing to native code
+                                if (imageUrl && (imageUrl.indexOf('upload.wikimedia.org') !== -1 || imageUrl.indexOf('commons.wikimedia.org') !== -1)) {
+                                    console.log('Opening image natively:', imageUrl);
+                                    if (window.ImageViewer) {
+                                        window.ImageViewer.showImageFullscreen(imageUrl);
+                                    } else {
+                                        console.warn('ImageViewer interface not available');
+                                    }
+                                } else {
+                                    console.warn('Invalid or untrusted image URL:', imageUrl);
                                 }
                                 
                                 return false;
@@ -777,7 +788,12 @@ class MainActivity : AppCompatActivity() {
                     }
                     
                     // Initial setup
-                    interceptImageClicks();
+                    try {
+                        interceptImageClicks();
+                        console.log('Image click interception initialized successfully');
+                    } catch (e) {
+                        console.error('Failed to initialize image click interception:', e);
+                    }
                     
                     // Re-run when new content is loaded (for dynamic content)
                     var observer = new MutationObserver(function(mutations) {
@@ -1301,13 +1317,34 @@ class SearchSuggestionsAdapter(
         @JavascriptInterface
         fun showImageFullscreen(imageUrl: String) {
             Log.d(TAG, "Opening image in fullscreen: $imageUrl")
+            
+            // Validate URL to prevent potential security issues
+            if (imageUrl.isBlank() || 
+                (!imageUrl.startsWith("https://upload.wikimedia.org/") && 
+                 !imageUrl.startsWith("https://commons.wikimedia.org/"))) {
+                Log.w(TAG, "Invalid or untrusted image URL: $imageUrl")
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Unable to open image: Invalid URL", Toast.LENGTH_SHORT).show()
+                }
+                return
+            }
+            
             runOnUiThread {
                 try {
                     val intent = Intent(Intent.ACTION_VIEW).apply {
                         data = Uri.parse(imageUrl)
                         type = "image/*"
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
-                    startActivity(intent)
+                    
+                    // Check if there's an app that can handle the intent
+                    if (intent.resolveActivity(packageManager) != null) {
+                        startActivity(intent)
+                        Log.d(TAG, "Successfully opened image: $imageUrl")
+                    } else {
+                        Log.w(TAG, "No app available to view images")
+                        Toast.makeText(this@MainActivity, "No image viewer app available", Toast.LENGTH_SHORT).show()
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to open image: $imageUrl", e)
                     Toast.makeText(this@MainActivity, "Unable to open image", Toast.LENGTH_SHORT).show()
