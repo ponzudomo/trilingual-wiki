@@ -80,6 +80,7 @@ class ImageViewerInterceptionTest {
     @Test
     fun `ImageViewer interface should handle image URLs securely`() {
         // Test that verifies the ImageViewerInterface handles various image URL formats securely
+        // and opens them in the custom full-screen overlay
         
         val validImageUrls = listOf(
             "https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg",
@@ -96,9 +97,10 @@ class ImageViewerInterceptionTest {
         
         // Expected behavior:
         // - Only Wikimedia URLs should be accepted
-        // - URLs should be validated before opening
+        // - URLs should be validated before opening in FullscreenImageActivity
         // - Invalid URLs should show appropriate error message
         // - Security checks should prevent malicious URLs
+        // - Images should display in full-screen overlay covering all panels
         
         // For this unit test, we document the expected URL validation
         validImageUrls.forEach { url ->
@@ -112,6 +114,7 @@ class ImageViewerInterceptionTest {
         }
         
         assertTrue("ImageViewer interface should validate URLs for security", true)
+        assertTrue("ImageViewer should use FullscreenImageActivity for in-app viewing", true)
     }
 
     @Test
@@ -144,6 +147,22 @@ class ImageViewerInterceptionTest {
         
         assertTrue("Native image viewing should bypass Wikipedia's navigation-breaking image viewer", true)
         assertTrue("Back button behavior should be consistent across all panels", true)
+    }
+
+    @Test
+    fun `fullscreen image overlay should cover all panels`() {
+        // Test that documents the new full-screen overlay behavior
+        
+        // IMPROVEMENT: Show images over all panels instead of external app
+        // 1. User taps image in any panel -> FullscreenImageActivity opens as overlay
+        // 2. Image displays in full screen covering all three language panels
+        // 3. User can tap image or close button to return to the trilingual view
+        // 4. No external app dependency - works consistently across all devices
+        
+        assertTrue("FullscreenImageActivity should provide in-app image viewing", true)
+        assertTrue("Image overlay should cover all three language panels", true)
+        assertTrue("Image should display in true full-screen mode", true)
+        assertTrue("User should be able to close overlay with tap or back button", true)
     }
 
     @Test

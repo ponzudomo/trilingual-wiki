@@ -1311,12 +1311,13 @@ class SearchSuggestionsAdapter(
 
     /**
      * JavaScript interface to handle image clicks from Wikipedia pages.
-     * This allows the app to show images natively instead of using Wikipedia's image viewer.
+     * This allows the app to show images natively in full screen over all panels
+     * instead of using Wikipedia's image viewer.
      */
     inner class ImageViewerInterface {
         @JavascriptInterface
         fun showImageFullscreen(imageUrl: String) {
-            Log.d(TAG, "Opening image in fullscreen: $imageUrl")
+            Log.d(TAG, "Opening image in fullscreen overlay: $imageUrl")
             
             // Validate URL to prevent potential security issues
             if (imageUrl.isBlank() || 
@@ -1331,22 +1332,13 @@ class SearchSuggestionsAdapter(
             
             runOnUiThread {
                 try {
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        data = Uri.parse(imageUrl)
-                        type = "image/*"
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    val intent = Intent(this@MainActivity, FullscreenImageActivity::class.java).apply {
+                        putExtra(FullscreenImageActivity.EXTRA_IMAGE_URL, imageUrl)
                     }
-                    
-                    // Check if there's an app that can handle the intent
-                    if (intent.resolveActivity(packageManager) != null) {
-                        startActivity(intent)
-                        Log.d(TAG, "Successfully opened image: $imageUrl")
-                    } else {
-                        Log.w(TAG, "No app available to view images")
-                        Toast.makeText(this@MainActivity, "No image viewer app available", Toast.LENGTH_SHORT).show()
-                    }
+                    startActivity(intent)
+                    Log.d(TAG, "Successfully opened image overlay: $imageUrl")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to open image: $imageUrl", e)
+                    Log.e(TAG, "Failed to open image overlay: $imageUrl", e)
                     Toast.makeText(this@MainActivity, "Unable to open image", Toast.LENGTH_SHORT).show()
                 }
             }
