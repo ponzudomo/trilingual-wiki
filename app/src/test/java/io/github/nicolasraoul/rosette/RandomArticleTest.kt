@@ -35,4 +35,35 @@ class RandomArticleTest {
         )
         assertEquals(0, emptyRandomList.query?.random?.size)
     }
+
+    @Test
+    fun `disambiguation page data structure works`() {
+        // Test that our EntityClaim structure can represent disambiguation page data
+        val disambiguationClaim = Claim(
+            mainsnak = MainSnak(
+                datavalue = DataValue(
+                    value = mapOf("id" to "Q4167410") // Wikimedia disambiguation page
+                )
+            )
+        )
+        
+        val entity = EntityClaim(
+            id = "Q123",
+            claims = mapOf("P31" to listOf(disambiguationClaim)),
+            sitelinks = null,
+            labels = null
+        )
+        
+        // Verify the structure can hold disambiguation data
+        assertNotNull(entity.claims)
+        assertTrue(entity.claims!!.containsKey("P31"))
+        assertEquals(1, entity.claims!!["P31"]?.size)
+        
+        val claim = entity.claims!!["P31"]?.first()
+        assertNotNull(claim?.mainsnak?.datavalue?.value)
+        
+        // This verifies our data structure can represent the disambiguation check
+        val dataValue = claim?.mainsnak?.datavalue?.value as? Map<*, *>
+        assertEquals("Q4167410", dataValue?.get("id"))
+    }
 }
