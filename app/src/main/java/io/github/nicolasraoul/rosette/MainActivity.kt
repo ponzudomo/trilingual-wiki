@@ -21,6 +21,7 @@ import android.view.inputmethod.InputMethodManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.JavascriptInterface
 import android.widget.EditText
 import android.widget.ImageView
 import android.app.Activity
@@ -712,8 +713,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Inject CSS to add padding to prevent text cropping at edges and hide Wikipedia's top banner
+            // Also inject JavaScript to intercept image clicks for native full-screen viewing
             view?.evaluateJavascript("""
                 (function() {
+                    // Inject CSS styles
                     var style = document.createElement('style');
                     style.textContent = 
                         'body { padding-left: 8px !important; padding-right: 8px !important; } ' +
@@ -727,6 +730,78 @@ class MainActivity : AppCompatActivity() {
                         '.mw-header { display: none !important; } ' +
                         'body { margin-top: 0 !important; padding-top: 0 !important; }';
                     document.head.appendChild(style);
+                    
+                    // Intercept image clicks to show them natively instead of Wikipedia's image viewer
+                    function interceptImageClicks() {
+                        var images = document.querySelectorAll('img[src*="/thumb/"], img[src*="/commons/"], .image img, .thumbinner img');
+                        images.forEach(function(img) {
+                            // Skip if already processed
+                            if (img.hasAttribute('data-native-handler')) return;
+                            
+                            img.setAttribute('data-native-handler', 'true');
+                            img.style.cursor = 'pointer';
+                            
+                            // Find the containing link element if it exists
+                            var link = img.closest('a[href*="/wiki/File:"], a[href*="/commons/File:"]');
+                            
+                            function handleImageClick(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                // Get the highest resolution image URL
+                                var imageUrl = img.src;
+                                
+                                // Try to get original image URL from various sources
+                                if (link && link.href) {
+                                    // Try to extract full image URL from Wikipedia file page link
+                                    var filePageUrl = link.href;
+                                    // For now, use the existing image URL but remove size restrictions
+                                    imageUrl = imageUrl.replace(/\/thumb\/(.+)\/\d+px-[^\/]+${'$'}/, '/${'$'}1');
+                                    imageUrl = imageUrl.replace(/\/\d+px-[^\/]+${'$'}/, '');
+                                }
+                                
+                                console.log('Opening image natively:', imageUrl);
+                                if (window.ImageViewer) {
+                                    window.ImageViewer.showImageFullscreen(imageUrl);
+                                }
+                                
+                                return false;
+                            }
+                            
+                            // Add click handler to both image and link
+                            img.addEventListener('click', handleImageClick, true);
+                            if (link) {
+                                link.addEventListener('click', handleImageClick, true);
+                            }
+                        });
+                    }
+                    
+                    // Initial setup
+                    interceptImageClicks();
+                    
+                    // Re-run when new content is loaded (for dynamic content)
+                    var observer = new MutationObserver(function(mutations) {
+                        var hasNewImages = false;
+                        mutations.forEach(function(mutation) {
+                            if (mutation.addedNodes.length > 0) {
+                                mutation.addedNodes.forEach(function(node) {
+                                    if (node.nodeType === 1) { // Element node
+                                        if (node.tagName === 'IMG' || node.querySelector && node.querySelector('img')) {
+                                            hasNewImages = true;
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                        if (hasNewImages) {
+                            setTimeout(interceptImageClicks, 100);
+                        }
+                    });
+                    
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
                 })();
             """, null)
             
@@ -817,6 +892,9 @@ class MainActivity : AppCompatActivity() {
         settings.displayZoomControls = false
         settings.textZoom = 100
         webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+        
+        // Add JavaScript interface for native image viewing
+        webView.addJavascriptInterface(ImageViewerInterface(), "ImageViewer")
     }
 
     private fun updateStatus(message: String) {
@@ -1210,6 +1288,29 @@ class SearchSuggestionsAdapter(
                         .into(thumbnailImageView)
                 } else {
                     thumbnailImageView.setImageResource(android.R.drawable.ic_menu_gallery)
+                }
+            }
+        }
+    }
+
+    /**
+     * JavaScript interface to handle image clicks from Wikipedia pages.
+     * This allows the app to show images natively instead of using Wikipedia's image viewer.
+     */
+    inner class ImageViewerInterface {
+        @JavascriptInterface
+        fun showImageFullscreen(imageUrl: String) {
+            Log.d(TAG, "Opening image in fullscreen: $imageUrl")
+            runOnUiThread {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse(imageUrl)
+                        type = "image/*"
+                    }
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to open image: $imageUrl", e)
+                    Toast.makeText(this@MainActivity, "Unable to open image", Toast.LENGTH_SHORT).show()
                 }
             }
         }
