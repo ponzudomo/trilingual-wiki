@@ -15,7 +15,11 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 
 /**
  * Full-screen image viewer activity that displays images over all panels.
@@ -33,7 +37,6 @@ class FullscreenImageActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var closeButton: ImageButton
     private val progressHandler = Handler(Looper.getMainLooper())
-    private var progressRunnable: Runnable? = null
     private var timeoutRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -187,80 +190,68 @@ class FullscreenImageActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
         progressBar.progress = 0
         
-        // Start simulating realistic download progress
-        startProgressSimulation()
+        // Register progress listener for this specific URL
+        ProgressInterceptor.addListener(imageUrl) { progress ->
+            Log.d(TAG, "Real progress update: $progress%")
+            progressBar.progress = progress
+        }
         
-        // Set up timeout handling - reduced to 10 seconds for better UX
+        // Set up timeout handling - 10 seconds for better UX
         timeoutRunnable = Runnable {
             Log.w(TAG, "Image load timeout after 10 seconds for URL: $imageUrl")
-            stopProgressSimulation()
+            ProgressInterceptor.removeListener(imageUrl)
             progressBar.visibility = View.GONE
-            Toast.makeText(this@FullscreenImageActivity, "Image loading is taking too long. Please try again.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@FullscreenImageActivity, "Image loading timeout. Please try again.", Toast.LENGTH_SHORT).show()
         }
         progressHandler.postDelayed(timeoutRunnable!!, 10000) // 10 second timeout
         
         Glide.with(this)
             .load(imageUrl)
-            .transition(DrawableTransitionOptions.withCrossFade())
-            .into(imageView)
-        
-        // Since we can't reliably detect when Glide finishes loading, 
-        // we'll complete the progress bar after a reasonable time
-        progressHandler.postDelayed({
-            if (progressBar.visibility == View.VISIBLE) {
-                Log.d(TAG, "Completing progress bar after timeout")
-                progressBar.progress = 100
-                progressHandler.postDelayed({
+            .listener(object : RequestListener<Drawable> {
+                override fun onLoadFailed(
+                    e: GlideException?,
+                    model: Any?,
+                    target: Target<Drawable>,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    Log.e(TAG, "Image load failed", e)
+                    ProgressInterceptor.removeListener(imageUrl)
+                    clearTimeouts()
                     progressBar.visibility = View.GONE
-                }, 200)
-            }
-        }, 8000)
-    }
-    
-    private fun startProgressSimulation() {
-        Log.d(TAG, "Starting progress simulation")
-        var currentProgress = 0
-        val totalDuration = 8000L // 8 seconds to match Glide timeout
-        val updateInterval = 150L // Update every 150ms for smoother animation
-        val maxProgress = 90 // Don't go past 90% until image actually loads
-        
-        val progressIncrement = (maxProgress * updateInterval / totalDuration.toFloat()).toInt().coerceAtLeast(1)
-        
-        progressRunnable = object : Runnable {
-            override fun run() {
-                if (currentProgress < maxProgress) {
-                    // Slow down progress as we get closer to the end for more realistic feel
-                    val remainingProgress = maxProgress - currentProgress
-                    val adjustedIncrement = when {
-                        currentProgress < 20 -> progressIncrement * 2 // Fast start
-                        currentProgress < 50 -> progressIncrement // Normal speed
-                        currentProgress < 75 -> (progressIncrement * 0.7).toInt().coerceAtLeast(1) // Slow down
-                        else -> (progressIncrement * 0.3).toInt().coerceAtLeast(1) // Very slow at end
+                    Toast.makeText(this@FullscreenImageActivity, "Failed to load image", Toast.LENGTH_SHORT).show()
+                    return false
+                }
+
+                override fun onResourceReady(
+                    resource: Drawable,
+                    model: Any,
+                    target: Target<Drawable>?,
+                    dataSource: DataSource,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    Log.d(TAG, "Image loaded successfully")
+                    ProgressInterceptor.removeListener(imageUrl)
+                    clearTimeouts()
+                    
+                    // Complete progress bar if not already at 100%
+                    if (progressBar.progress < 100) {
+                        progressBar.progress = 100
                     }
                     
-                    currentProgress = (currentProgress + adjustedIncrement).coerceAtMost(maxProgress)
-                    progressBar.progress = currentProgress
-                    Log.v(TAG, "Progress updated to: $currentProgress%")
-                    progressHandler.postDelayed(this, updateInterval)
-                } else {
-                    Log.d(TAG, "Progress simulation stopped at $currentProgress%")
+                    // Hide progress bar after a brief delay
+                    progressHandler.postDelayed({
+                        progressBar.visibility = View.GONE
+                    }, 200)
+                    
+                    return false // Let Glide handle the actual display
                 }
-            }
-        }
-        progressHandler.post(progressRunnable!!)
-    }
-    
-    private fun stopProgressSimulation() {
-        Log.d(TAG, "Stopping progress simulation")
-        progressRunnable?.let { runnable ->
-            progressHandler.removeCallbacks(runnable)
-        }
-        progressRunnable = null
+            })
+            .transition(DrawableTransitionOptions.withCrossFade())
+            .into(imageView)
     }
     
     private fun clearTimeouts() {
         Log.d(TAG, "Clearing timeouts")
-        stopProgressSimulation()
         timeoutRunnable?.let { runnable ->
             progressHandler.removeCallbacks(runnable)
         }
@@ -270,6 +261,14 @@ class FullscreenImageActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "FullscreenImageActivity onDestroy")
+        
+        // Clean up any remaining progress listeners
+        val imageUrl = intent.getStringExtra(EXTRA_IMAGE_URL)
+        if (!imageUrl.isNullOrBlank()) {
+            val processedUrl = processSvgUrl(imageUrl)
+            ProgressInterceptor.removeListener(processedUrl)
+        }
+        
         clearTimeouts()
     }
     
