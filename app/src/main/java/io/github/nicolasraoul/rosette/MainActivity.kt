@@ -433,6 +433,8 @@ class MainActivity : AppCompatActivity() {
             fabLayoutParams.setMargins(margin, margin, margin, margin)
             fab.layoutParams = fabLayoutParams
             fab.text = lang.uppercase()
+            val padding = (4 * resources.displayMetrics.density).toInt()
+            fab.setPadding(padding, 0, padding, 0)
 
             fab.setOnClickListener { view ->
                 val popup = android.widget.PopupMenu(this, view)
@@ -447,7 +449,8 @@ class MainActivity : AppCompatActivity() {
                         if (articleTitle != null) {
                             when (menuItem.title) {
                                 "Open in Wikipedia app" -> {
-                                    val appUri = Uri.parse("wikipedia://article/$articleTitle")
+                                    val articleUrl = "https://$lang.wikipedia.org/wiki/$articleTitle"
+                                    val appUri = Uri.parse(articleUrl)
                                     val appIntent = Intent(Intent.ACTION_VIEW, appUri)
                                     appIntent.setPackage("org.wikipedia") // Try to open official app directly
                                     try {
