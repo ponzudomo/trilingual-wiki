@@ -38,7 +38,6 @@ class FullscreenImageActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var closeButton: ImageButton
     private val progressHandler = Handler(Looper.getMainLooper())
-    private var timeoutRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -158,15 +157,6 @@ class FullscreenImageActivity : AppCompatActivity() {
             progressBar.progress = progress
         }
         
-        // Set up timeout handling - 10 seconds for better UX
-        timeoutRunnable = Runnable {
-            Log.w(TAG, "Image load timeout after 10 seconds for URL: $imageUrl")
-            ProgressInterceptor.removeListener(imageUrl)
-            progressBar.visibility = View.GONE
-            Toast.makeText(this@FullscreenImageActivity, "Image loading timeout. Please try again.", Toast.LENGTH_SHORT).show()
-        }
-        progressHandler.postDelayed(timeoutRunnable!!, 10000) // 10 second timeout
-        
         Glide.with(this)
             .load(imageUrl)
             .listener(object : RequestListener<Drawable> {
@@ -178,7 +168,6 @@ class FullscreenImageActivity : AppCompatActivity() {
                 ): Boolean {
                     Log.e(TAG, "Image load failed", e)
                     ProgressInterceptor.removeListener(imageUrl)
-                    clearTimeouts()
                     progressBar.visibility = View.GONE
                     Toast.makeText(this@FullscreenImageActivity, "Failed to load image", Toast.LENGTH_SHORT).show()
                     return false
@@ -193,7 +182,6 @@ class FullscreenImageActivity : AppCompatActivity() {
                 ): Boolean {
                     Log.d(TAG, "Image loaded successfully")
                     ProgressInterceptor.removeListener(imageUrl)
-                    clearTimeouts()
                     
                     // Complete progress bar if not already at 100%
                     if (progressBar.progress < 100) {
@@ -212,14 +200,6 @@ class FullscreenImageActivity : AppCompatActivity() {
             .into(imageView)
     }
     
-    private fun clearTimeouts() {
-        Log.d(TAG, "Clearing timeouts")
-        timeoutRunnable?.let { runnable ->
-            progressHandler.removeCallbacks(runnable)
-        }
-        timeoutRunnable = null
-    }
-    
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "FullscreenImageActivity onDestroy")
@@ -230,7 +210,5 @@ class FullscreenImageActivity : AppCompatActivity() {
             val processedUrl = processSvgUrl(imageUrl)
             ProgressInterceptor.removeListener(processedUrl)
         }
-        
-        clearTimeouts()
     }
 }
