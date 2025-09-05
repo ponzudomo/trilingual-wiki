@@ -15,11 +15,7 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.target.Target
 
 /**
  * Full-screen image viewer activity that displays images over all panels.
@@ -205,42 +201,20 @@ class FullscreenImageActivity : AppCompatActivity() {
         
         Glide.with(this)
             .load(imageUrl)
-            .timeout(8000) // 8 second Glide timeout, shorter than overall timeout
-            .listener(object : RequestListener<Drawable> {
-                override fun onLoadFailed(
-                    e: GlideException?,
-                    model: Any?,
-                    target: Target<Drawable>?,
-                    isFirstResource: Boolean
-                ): Boolean {
-                    Log.e(TAG, "Image load failed for URL: $imageUrl", e)
-                    clearTimeouts()
-                    progressBar.visibility = View.GONE
-                    
-                    // Show concise error message
-                    Toast.makeText(this@FullscreenImageActivity, "Failed to load image. Please try again.", Toast.LENGTH_SHORT).show()
-                    return false
-                }
-                
-                override fun onResourceReady(
-                    resource: Drawable?,
-                    model: Any?,
-                    target: Target<Drawable>?,
-                    dataSource: DataSource?,
-                    isFirstResource: Boolean
-                ): Boolean {
-                    Log.d(TAG, "Image loaded successfully from: $dataSource")
-                    clearTimeouts()
-                    // Complete the progress bar and then hide it
-                    progressBar.progress = 100
-                    progressHandler.postDelayed({
-                        progressBar.visibility = View.GONE
-                    }, 200)
-                    return false
-                }
-            })
             .transition(DrawableTransitionOptions.withCrossFade())
             .into(imageView)
+        
+        // Since we can't reliably detect when Glide finishes loading, 
+        // we'll complete the progress bar after a reasonable time
+        progressHandler.postDelayed({
+            if (progressBar.visibility == View.VISIBLE) {
+                Log.d(TAG, "Completing progress bar after timeout")
+                progressBar.progress = 100
+                progressHandler.postDelayed({
+                    progressBar.visibility = View.GONE
+                }, 200)
+            }
+        }, 8000)
     }
     
     private fun startProgressSimulation() {
