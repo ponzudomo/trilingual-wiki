@@ -115,74 +115,45 @@ class FullscreenImageActivity : AppCompatActivity() {
     }
     
     /**
-     * Converts SVG URLs to PNG thumbnail URLs for better compatibility.
+     * Converts SVG URLs to PNG representation URLs using Wikimedia's Special:Redirect service.
+     * This approach is more reliable than trying to construct thumbnail URLs manually.
      * Example: 
      * https://commons.wikimedia.org/wiki/File:Flag_of_New_Zealand.svg
-     * -> https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Flag_of_New_Zealand.svg/960px-Flag_of_New_Zealand.svg.png
+     * -> https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_New_Zealand.svg&width=960
      */
     private fun processSvgUrl(imageUrl: String): String {
         Log.d(TAG, "Processing URL: $imageUrl")
         
         // Check if it's an SVG file
         if (imageUrl.contains(".svg", ignoreCase = true)) {
-            Log.d(TAG, "Detected SVG file, converting to PNG thumbnail")
+            Log.d(TAG, "Detected SVG file, converting to PNG using Special:Redirect")
             
             // Handle commons.wikimedia.org/wiki/File: URLs
             if (imageUrl.contains("commons.wikimedia.org/wiki/File:")) {
-                val fileName = imageUrl.substringAfterLast("File:").replace(" ", "_")
+                val fileName = imageUrl.substringAfterLast("File:")
                 Log.d(TAG, "Extracted file name: $fileName")
                 
-                // For SVG files, we'll use a simple approach and try the most common path structure
-                // In practice, Wikimedia Commons uses MD5 hash, but we'll try some common patterns
-                val thumbnailUrl = convertWikimediaCommonsSvgToPng(fileName)
-                Log.d(TAG, "Converted SVG to PNG thumbnail: $thumbnailUrl")
-                return thumbnailUrl
+                // Use Wikimedia's Special:Redirect service to get PNG representation
+                val redirectUrl = "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/$fileName&width=960"
+                Log.d(TAG, "Converted SVG to PNG using Special:Redirect: $redirectUrl")
+                return redirectUrl
             }
             
             // Handle direct upload.wikimedia.org URLs that are SVG
             if (imageUrl.contains("upload.wikimedia.org") && imageUrl.contains(".svg")) {
-                // Try to convert existing upload URLs to PNG thumbnails
-                if (imageUrl.contains("/commons/")) {
-                    val fileName = imageUrl.substringAfterLast("/")
-                    val pathPart = imageUrl.substringAfter("/commons/").substringBeforeLast("/")
-                    val convertedUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/$pathPart/$fileName/960px-$fileName.png"
-                    Log.d(TAG, "Converted direct SVG URL to PNG: $convertedUrl")
-                    return convertedUrl
-                }
+                // Extract filename from the URL
+                val fileName = imageUrl.substringAfterLast("/")
+                Log.d(TAG, "Extracted filename from direct URL: $fileName")
+                
+                // Use Special:Redirect service
+                val redirectUrl = "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/$fileName&width=960"
+                Log.d(TAG, "Converted direct SVG URL to PNG using Special:Redirect: $redirectUrl")
+                return redirectUrl
             }
         }
         
         Log.d(TAG, "No SVG conversion needed")
         return imageUrl
-    }
-    
-    /**
-     * Converts Wikimedia Commons SVG files to PNG thumbnails.
-     * Uses common directory patterns since we don't have MD5 hash calculation.
-     */
-    private fun convertWikimediaCommonsSvgToPng(fileName: String): String {
-        // Common patterns for well-known files
-        val knownMappings = mapOf(
-            "Flag_of_New_Zealand.svg" to "3/3e",
-            "Flag_of_Australia.svg" to "b/b9", 
-            "Flag_of_Canada.svg" to "c/cf",
-            "Flag_of_the_United_States.svg" to "a/a4",
-            "Flag_of_the_United_Kingdom.svg" to "a/ae"
-        )
-        
-        val path = knownMappings[fileName] ?: getWikimediaPath(fileName)
-        return "https://upload.wikimedia.org/wikipedia/commons/thumb/$path/$fileName/960px-$fileName.png"
-    }
-    
-    /**
-     * Gets the Wikimedia Commons directory path for a file.
-     * This is a simplified version - in reality, Wikimedia uses MD5 hash of filename.
-     */
-    private fun getWikimediaPath(fileName: String): String {
-        val name = fileName.replace(" ", "_")
-        val firstChar = name[0].toString().lowercase()
-        val secondChar = if (name.length > 1) name.substring(0, 2).lowercase() else firstChar
-        return "$firstChar/$secondChar"
     }
     
     private fun loadImage(imageUrl: String) {
