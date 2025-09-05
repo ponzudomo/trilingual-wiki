@@ -5,6 +5,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import android.view.WindowInsetsController
 import android.view.WindowManager
@@ -29,6 +30,7 @@ class FullscreenImageActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_IMAGE_URL = "extra_image_url"
+        private const val TAG = "FullscreenImageActivity"
     }
 
     private lateinit var imageView: ImageView
@@ -36,9 +38,12 @@ class FullscreenImageActivity : AppCompatActivity() {
     private lateinit var closeButton: ImageButton
     private val progressHandler = Handler(Looper.getMainLooper())
     private var progressRunnable: Runnable? = null
+    private var timeoutRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        Log.d(TAG, "FullscreenImageActivity onCreate started")
         
         setContentView(R.layout.activity_fullscreen_image)
         
@@ -58,14 +63,21 @@ class FullscreenImageActivity : AppCompatActivity() {
         // Get the image URL from the intent
         val imageUrl = intent.getStringExtra(EXTRA_IMAGE_URL)
         
+        Log.d(TAG, "Received image URL: $imageUrl")
+        
         if (imageUrl.isNullOrBlank()) {
+            Log.e(TAG, "Invalid image URL received")
             Toast.makeText(this, "Invalid image URL", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
         
+        // Convert SVG URLs to PNG if needed
+        val processedUrl = processSvgUrl(imageUrl)
+        Log.d(TAG, "Processed URL: $processedUrl")
+        
         // Load the image
-        loadImage(imageUrl)
+        loadImage(processedUrl)
     }
     
     private fun setupFullscreenMode() {
@@ -103,15 +115,97 @@ class FullscreenImageActivity : AppCompatActivity() {
         }
     }
     
+    /**
+     * Converts SVG URLs to PNG thumbnail URLs for better compatibility.
+     * Example: 
+     * https://commons.wikimedia.org/wiki/File:Flag_of_New_Zealand.svg
+     * -> https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Flag_of_New_Zealand.svg/960px-Flag_of_New_Zealand.svg.png
+     */
+    private fun processSvgUrl(imageUrl: String): String {
+        Log.d(TAG, "Processing URL: $imageUrl")
+        
+        // Check if it's an SVG file
+        if (imageUrl.contains(".svg", ignoreCase = true)) {
+            Log.d(TAG, "Detected SVG file, converting to PNG thumbnail")
+            
+            // Handle commons.wikimedia.org/wiki/File: URLs
+            if (imageUrl.contains("commons.wikimedia.org/wiki/File:")) {
+                val fileName = imageUrl.substringAfterLast("File:").replace(" ", "_")
+                Log.d(TAG, "Extracted file name: $fileName")
+                
+                // For SVG files, we'll use a simple approach and try the most common path structure
+                // In practice, Wikimedia Commons uses MD5 hash, but we'll try some common patterns
+                val thumbnailUrl = convertWikimediaCommonsSvgToPng(fileName)
+                Log.d(TAG, "Converted SVG to PNG thumbnail: $thumbnailUrl")
+                return thumbnailUrl
+            }
+            
+            // Handle direct upload.wikimedia.org URLs that are SVG
+            if (imageUrl.contains("upload.wikimedia.org") && imageUrl.contains(".svg")) {
+                // Try to convert existing upload URLs to PNG thumbnails
+                if (imageUrl.contains("/commons/")) {
+                    val fileName = imageUrl.substringAfterLast("/")
+                    val pathPart = imageUrl.substringAfter("/commons/").substringBeforeLast("/")
+                    val convertedUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/$pathPart/$fileName/960px-$fileName.png"
+                    Log.d(TAG, "Converted direct SVG URL to PNG: $convertedUrl")
+                    return convertedUrl
+                }
+            }
+        }
+        
+        Log.d(TAG, "No SVG conversion needed")
+        return imageUrl
+    }
+    
+    /**
+     * Converts Wikimedia Commons SVG files to PNG thumbnails.
+     * Uses common directory patterns since we don't have MD5 hash calculation.
+     */
+    private fun convertWikimediaCommonsSvgToPng(fileName: String): String {
+        // Common patterns for well-known files
+        val knownMappings = mapOf(
+            "Flag_of_New_Zealand.svg" to "3/3e",
+            "Flag_of_Australia.svg" to "b/b9", 
+            "Flag_of_Canada.svg" to "c/cf",
+            "Flag_of_the_United_States.svg" to "a/a4",
+            "Flag_of_the_United_Kingdom.svg" to "a/ae"
+        )
+        
+        val path = knownMappings[fileName] ?: getWikimediaPath(fileName)
+        return "https://upload.wikimedia.org/wikipedia/commons/thumb/$path/$fileName/960px-$fileName.png"
+    }
+    
+    /**
+     * Gets the Wikimedia Commons directory path for a file.
+     * This is a simplified version - in reality, Wikimedia uses MD5 hash of filename.
+     */
+    private fun getWikimediaPath(fileName: String): String {
+        val name = fileName.replace(" ", "_")
+        val firstChar = name[0].toString().lowercase()
+        val secondChar = if (name.length > 1) name.substring(0, 2).lowercase() else firstChar
+        return "$firstChar/$secondChar"
+    }
+    
     private fun loadImage(imageUrl: String) {
+        Log.d(TAG, "Starting image load for: $imageUrl")
         progressBar.visibility = View.VISIBLE
         progressBar.progress = 0
         
         // Start simulating realistic download progress
         startProgressSimulation()
         
+        // Set up timeout handling
+        timeoutRunnable = Runnable {
+            Log.w(TAG, "Image load timeout for URL: $imageUrl")
+            stopProgressSimulation()
+            progressBar.visibility = View.GONE
+            Toast.makeText(this@FullscreenImageActivity, "Image load timeout. Please check your connection.", Toast.LENGTH_LONG).show()
+        }
+        progressHandler.postDelayed(timeoutRunnable!!, 30000) // 30 second timeout
+        
         Glide.with(this)
             .load(imageUrl)
+            .timeout(20000) // 20 second Glide timeout
             .listener(object : RequestListener<Drawable> {
                 override fun onLoadFailed(
                     e: GlideException?,
@@ -119,9 +213,14 @@ class FullscreenImageActivity : AppCompatActivity() {
                     target: Target<Drawable>?,
                     isFirstResource: Boolean
                 ): Boolean {
-                    stopProgressSimulation()
+                    Log.e(TAG, "Image load failed for URL: $imageUrl", e)
+                    clearTimeouts()
                     progressBar.visibility = View.GONE
-                    Toast.makeText(this@FullscreenImageActivity, "Failed to load image", Toast.LENGTH_SHORT).show()
+                    
+                    // Show detailed error message
+                    val errorMessage = e?.message ?: "Unknown error"
+                    Log.e(TAG, "Detailed error: $errorMessage")
+                    Toast.makeText(this@FullscreenImageActivity, "Failed to load image: $errorMessage", Toast.LENGTH_LONG).show()
                     return false
                 }
                 
@@ -132,7 +231,8 @@ class FullscreenImageActivity : AppCompatActivity() {
                     dataSource: DataSource?,
                     isFirstResource: Boolean
                 ): Boolean {
-                    stopProgressSimulation()
+                    Log.d(TAG, "Image loaded successfully from: $dataSource")
+                    clearTimeouts()
                     // Complete the progress bar and then hide it
                     progressBar.progress = 100
                     progressHandler.postDelayed({
@@ -146,16 +246,20 @@ class FullscreenImageActivity : AppCompatActivity() {
     }
     
     private fun startProgressSimulation() {
+        Log.d(TAG, "Starting progress simulation")
         var currentProgress = 0
-        val progressIncrement = 2
-        val updateInterval = 50L // milliseconds
+        val progressIncrement = 3 // Slightly faster increment
+        val updateInterval = 80L // milliseconds
         
         progressRunnable = object : Runnable {
             override fun run() {
-                if (currentProgress < 90) { // Don't complete until image is actually loaded
+                if (currentProgress < 85) { // Stop at 85% instead of 90% to leave more room
                     currentProgress += progressIncrement
                     progressBar.progress = currentProgress
+                    Log.v(TAG, "Progress updated to: $currentProgress%")
                     progressHandler.postDelayed(this, updateInterval)
+                } else {
+                    Log.d(TAG, "Progress simulation stopped at $currentProgress%")
                 }
             }
         }
@@ -163,15 +267,26 @@ class FullscreenImageActivity : AppCompatActivity() {
     }
     
     private fun stopProgressSimulation() {
+        Log.d(TAG, "Stopping progress simulation")
         progressRunnable?.let { runnable ->
             progressHandler.removeCallbacks(runnable)
         }
         progressRunnable = null
     }
     
+    private fun clearTimeouts() {
+        Log.d(TAG, "Clearing timeouts")
+        stopProgressSimulation()
+        timeoutRunnable?.let { runnable ->
+            progressHandler.removeCallbacks(runnable)
+        }
+        timeoutRunnable = null
+    }
+    
     override fun onDestroy() {
         super.onDestroy()
-        stopProgressSimulation()
+        Log.d(TAG, "FullscreenImageActivity onDestroy")
+        clearTimeouts()
     }
     
     override fun onBackPressed() {

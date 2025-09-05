@@ -787,29 +787,42 @@ class MainActivity : AppCompatActivity() {
                                 // Get the highest resolution image URL
                                 var imageUrl = img.src;
                                 
-                                // Try to get original image URL by removing size restrictions
-                                // Handle Wikipedia thumbnail URLs like:
-                                // https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Cat.jpg/220px-Cat.jpg
-                                // Should become: https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg
-                                if (imageUrl.includes('/thumb/')) {
-                                    imageUrl = imageUrl.replace(/\/thumb\/(.+)\/\d+px-[^\/]+${'$'}/, '/${'$'}1');
+                                // Check if this is an SVG from the link or src
+                                var originalUrl = imageUrl;
+                                if (link && link.href) {
+                                    // If we have a link to the file page, prefer that for SVG detection
+                                    if (link.href.includes('/wiki/File:') && link.href.toLowerCase().includes('.svg')) {
+                                        originalUrl = link.href;
+                                        console.log('Detected SVG file from link:', originalUrl);
+                                    }
                                 }
                                 
-                                // Handle direct size-restricted URLs like:
-                                // https://upload.wikimedia.org/wikipedia/commons/1/15/220px-Cat.jpg
-                                // Should become: https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg
-                                imageUrl = imageUrl.replace(/\/\d+px-([^\/]+)${'$'}/, '/${'$'}1');
+                                // For non-SVG images, try to get original image URL by removing size restrictions
+                                if (!originalUrl.toLowerCase().includes('.svg')) {
+                                    // Handle Wikipedia thumbnail URLs like:
+                                    // https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Cat.jpg/220px-Cat.jpg
+                                    // Should become: https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg
+                                    if (imageUrl.includes('/thumb/')) {
+                                        imageUrl = imageUrl.replace(/\/thumb\/(.+)\/\d+px-[^\/]+${'$'}/, '/${'$'}1');
+                                    }
+                                    
+                                    // Handle direct size-restricted URLs like:
+                                    // https://upload.wikimedia.org/wikipedia/commons/1/15/220px-Cat.jpg
+                                    // Should become: https://upload.wikimedia.org/wikipedia/commons/1/15/Cat.jpg
+                                    imageUrl = imageUrl.replace(/\/\d+px-([^\/]+)${'$'}/, '/${'$'}1');
+                                    originalUrl = imageUrl;
+                                }
                                 
                                 // Validate URL before passing to native code
-                                if (imageUrl && (imageUrl.indexOf('upload.wikimedia.org') !== -1 || imageUrl.indexOf('commons.wikimedia.org') !== -1)) {
-                                    console.log('Opening image natively:', imageUrl);
+                                if (originalUrl && (originalUrl.indexOf('upload.wikimedia.org') !== -1 || originalUrl.indexOf('commons.wikimedia.org') !== -1)) {
+                                    console.log('Opening image natively:', originalUrl);
                                     if (window.ImageViewer) {
-                                        window.ImageViewer.showImageFullscreen(imageUrl);
+                                        window.ImageViewer.showImageFullscreen(originalUrl);
                                     } else {
                                         console.warn('ImageViewer interface not available');
                                     }
                                 } else {
-                                    console.warn('Invalid or untrusted image URL:', imageUrl);
+                                    console.warn('Invalid or untrusted image URL:', originalUrl);
                                 }
                                 
                                 return false;
