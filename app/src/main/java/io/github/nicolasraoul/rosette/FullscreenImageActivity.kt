@@ -13,6 +13,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -49,6 +50,9 @@ class FullscreenImageActivity : AppCompatActivity() {
         // Set up full-screen immersive mode after content view is set
         setupFullscreenMode()
         
+        // Set up modern back handling
+        setupBackHandler()
+        
         imageView = findViewById(R.id.fullscreen_image_view)
         progressBar = findViewById(R.id.loading_progress)
         closeButton = findViewById(R.id.close_button)
@@ -80,38 +84,25 @@ class FullscreenImageActivity : AppCompatActivity() {
     }
     
     private fun setupFullscreenMode() {
-        // Make the activity full screen
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN
-        )
+        // Use modern WindowInsetsController for full screen mode (minSdk 34, so API 30+ is guaranteed)
+        window.insetsController?.let { controller ->
+            controller.hide(android.view.WindowInsets.Type.systemBars())
+            controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
         
-        // For API 30+ use WindowInsetsController
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            window.insetsController?.let { controller ->
-                controller.hide(android.view.WindowInsets.Type.systemBars())
-                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        // Set system bar colors using modern approach
+        window.setDecorFitsSystemWindows(false)
+    }
+    
+    private fun setupBackHandler() {
+        // Use modern OnBackPressedCallback for handling back button (API 33+)
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                Log.d(TAG, "Back button pressed")
+                finish()
             }
-        } else {
-            // For older API levels use system UI visibility
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            )
         }
-        
-        // Set status bar color to transparent
-        try {
-            window.statusBarColor = Color.TRANSPARENT
-            window.navigationBarColor = Color.TRANSPARENT
-        } catch (e: Exception) {
-            // Ignore if setting transparent colors fails on some devices
-        }
+        onBackPressedDispatcher.addCallback(this, callback)
     }
     
     /**
@@ -241,11 +232,5 @@ class FullscreenImageActivity : AppCompatActivity() {
         }
         
         clearTimeouts()
-    }
-    
-    override fun onBackPressed() {
-        @Suppress("DEPRECATION")
-        super.onBackPressed()
-        finish()
     }
 }
