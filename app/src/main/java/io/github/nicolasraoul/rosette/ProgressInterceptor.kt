@@ -8,7 +8,7 @@ import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
 // Interface for progress updates
-interface OnProgressListener {
+fun interface OnProgressListener {
     fun onProgress(progress: Int)
 }
 
