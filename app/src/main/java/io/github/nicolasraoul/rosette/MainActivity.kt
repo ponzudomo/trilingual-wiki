@@ -99,6 +99,42 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
     }
 
+    /**
+     * JavaScript interface to handle image clicks from Wikipedia pages.
+     * This allows the app to show images natively in full screen over all panels
+     * instead of using Wikipedia's image viewer.
+     */
+    inner class ImageViewerInterface {
+        @JavascriptInterface
+        fun showImageFullscreen(imageUrl: String) {
+            Log.d(TAG, "Opening image in fullscreen overlay: $imageUrl")
+            
+            // Validate URL to prevent potential security issues
+            if (imageUrl.isBlank() || 
+                (!imageUrl.startsWith("https://upload.wikimedia.org/") && 
+                 !imageUrl.startsWith("https://commons.wikimedia.org/"))) {
+                Log.w(TAG, "Invalid or untrusted image URL: $imageUrl")
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Unable to open image: Invalid URL", Toast.LENGTH_SHORT).show()
+                }
+                return
+            }
+            
+            runOnUiThread {
+                try {
+                    val intent = Intent(this@MainActivity, FullscreenImageActivity::class.java).apply {
+                        putExtra(FullscreenImageActivity.EXTRA_IMAGE_URL, imageUrl)
+                    }
+                    startActivity(intent)
+                    Log.d(TAG, "Successfully opened image overlay: $imageUrl")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to open image overlay: $imageUrl", e)
+                    Toast.makeText(this@MainActivity, "Unable to open image", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     private val openBookmarksLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val wikidataId = result.data?.getStringExtra(BookmarksActivity.EXTRA_WIKIDATA_ID)
@@ -1304,42 +1340,6 @@ class SearchSuggestionsAdapter(
                         .into(thumbnailImageView)
                 } else {
                     thumbnailImageView.setImageResource(android.R.drawable.ic_menu_gallery)
-                }
-            }
-        }
-    }
-
-    /**
-     * JavaScript interface to handle image clicks from Wikipedia pages.
-     * This allows the app to show images natively in full screen over all panels
-     * instead of using Wikipedia's image viewer.
-     */
-    inner class ImageViewerInterface {
-        @JavascriptInterface
-        fun showImageFullscreen(imageUrl: String) {
-            Log.d(TAG, "Opening image in fullscreen overlay: $imageUrl")
-            
-            // Validate URL to prevent potential security issues
-            if (imageUrl.isBlank() || 
-                (!imageUrl.startsWith("https://upload.wikimedia.org/") && 
-                 !imageUrl.startsWith("https://commons.wikimedia.org/"))) {
-                Log.w(TAG, "Invalid or untrusted image URL: $imageUrl")
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "Unable to open image: Invalid URL", Toast.LENGTH_SHORT).show()
-                }
-                return
-            }
-            
-            runOnUiThread {
-                try {
-                    val intent = Intent(this@MainActivity, FullscreenImageActivity::class.java).apply {
-                        putExtra(FullscreenImageActivity.EXTRA_IMAGE_URL, imageUrl)
-                    }
-                    startActivity(intent)
-                    Log.d(TAG, "Successfully opened image overlay: $imageUrl")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to open image overlay: $imageUrl", e)
-                    Toast.makeText(this@MainActivity, "Unable to open image", Toast.LENGTH_SHORT).show()
                 }
             }
         }
