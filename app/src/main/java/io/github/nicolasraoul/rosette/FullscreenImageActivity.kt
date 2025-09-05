@@ -32,10 +32,10 @@ class FullscreenImageActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Set up full-screen immersive mode
-        setupFullscreenMode()
-        
         setContentView(R.layout.activity_fullscreen_image)
+        
+        // Set up full-screen immersive mode after content view is set
+        setupFullscreenMode()
         
         imageView = findViewById(R.id.fullscreen_image_view)
         progressBar = findViewById(R.id.loading_progress)
@@ -87,8 +87,12 @@ class FullscreenImageActivity : AppCompatActivity() {
         }
         
         // Set status bar color to transparent
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
+        try {
+            window.statusBarColor = Color.TRANSPARENT
+            window.navigationBarColor = Color.TRANSPARENT
+        } catch (e: Exception) {
+            // Ignore if setting transparent colors fails on some devices
+        }
     }
     
     private fun loadImage(imageUrl: String) {
