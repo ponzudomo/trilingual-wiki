@@ -194,18 +194,18 @@ class FullscreenImageActivity : AppCompatActivity() {
         // Start simulating realistic download progress
         startProgressSimulation()
         
-        // Set up timeout handling
+        // Set up timeout handling - reduced to 10 seconds for better UX
         timeoutRunnable = Runnable {
-            Log.w(TAG, "Image load timeout for URL: $imageUrl")
+            Log.w(TAG, "Image load timeout after 10 seconds for URL: $imageUrl")
             stopProgressSimulation()
             progressBar.visibility = View.GONE
-            Toast.makeText(this@FullscreenImageActivity, "Image load timeout. Please check your connection.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this@FullscreenImageActivity, "Image loading is taking too long. Please try again.", Toast.LENGTH_SHORT).show()
         }
-        progressHandler.postDelayed(timeoutRunnable!!, 30000) // 30 second timeout
+        progressHandler.postDelayed(timeoutRunnable!!, 10000) // 10 second timeout
         
         Glide.with(this)
             .load(imageUrl)
-            .timeout(20000) // 20 second Glide timeout
+            .timeout(8000) // 8 second Glide timeout, shorter than overall timeout
             .listener(object : RequestListener<Drawable> {
                 override fun onLoadFailed(
                     e: GlideException?,
@@ -217,10 +217,8 @@ class FullscreenImageActivity : AppCompatActivity() {
                     clearTimeouts()
                     progressBar.visibility = View.GONE
                     
-                    // Show detailed error message
-                    val errorMessage = e?.message ?: "Unknown error"
-                    Log.e(TAG, "Detailed error: $errorMessage")
-                    Toast.makeText(this@FullscreenImageActivity, "Failed to load image: $errorMessage", Toast.LENGTH_LONG).show()
+                    // Show concise error message
+                    Toast.makeText(this@FullscreenImageActivity, "Failed to load image. Please try again.", Toast.LENGTH_SHORT).show()
                     return false
                 }
                 
@@ -248,13 +246,25 @@ class FullscreenImageActivity : AppCompatActivity() {
     private fun startProgressSimulation() {
         Log.d(TAG, "Starting progress simulation")
         var currentProgress = 0
-        val progressIncrement = 3 // Slightly faster increment
-        val updateInterval = 80L // milliseconds
+        val totalDuration = 8000L // 8 seconds to match Glide timeout
+        val updateInterval = 150L // Update every 150ms for smoother animation
+        val maxProgress = 90 // Don't go past 90% until image actually loads
+        
+        val progressIncrement = (maxProgress * updateInterval / totalDuration.toFloat()).toInt().coerceAtLeast(1)
         
         progressRunnable = object : Runnable {
             override fun run() {
-                if (currentProgress < 85) { // Stop at 85% instead of 90% to leave more room
-                    currentProgress += progressIncrement
+                if (currentProgress < maxProgress) {
+                    // Slow down progress as we get closer to the end for more realistic feel
+                    val remainingProgress = maxProgress - currentProgress
+                    val adjustedIncrement = when {
+                        currentProgress < 20 -> progressIncrement * 2 // Fast start
+                        currentProgress < 50 -> progressIncrement // Normal speed
+                        currentProgress < 75 -> (progressIncrement * 0.7).toInt().coerceAtLeast(1) // Slow down
+                        else -> (progressIncrement * 0.3).toInt().coerceAtLeast(1) // Very slow at end
+                    }
+                    
+                    currentProgress = (currentProgress + adjustedIncrement).coerceAtMost(maxProgress)
                     progressBar.progress = currentProgress
                     Log.v(TAG, "Progress updated to: $currentProgress%")
                     progressHandler.postDelayed(this, updateInterval)
