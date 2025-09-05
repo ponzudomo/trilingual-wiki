@@ -29,16 +29,16 @@
         android:progress="0"
         android:visibility="visible" />
 
-    <!-- Close button in top-right corner -->
+    <!-- Close button in top-right corner - highly visible on any background -->
     <ImageButton
         android:id="@+id/close_button"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_gravity="top|end"
         android:layout_margin="16dp"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:background="@drawable/close_button_background"
+        android:src="@drawable/ic_close_overlay"
         android:contentDescription="Close image"
-        android:tint="@android:color/white" />
+        android:scaleType="center" />
 
 </FrameLayout>
