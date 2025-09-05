@@ -44,6 +44,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -421,6 +422,69 @@ class MainActivity : AppCompatActivity() {
             frameLayout.addView(progressBar)
 
             progressBarMap[webView] = progressBar
+
+            val fab = com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton(this)
+            val fabLayoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                android.view.Gravity.BOTTOM or android.view.Gravity.END
+            )
+            val margin = (16 * resources.displayMetrics.density).toInt()
+            fabLayoutParams.setMargins(margin, margin, margin, margin)
+            fab.layoutParams = fabLayoutParams
+            fab.text = lang.uppercase()
+            val padding = (4 * resources.displayMetrics.density).toInt()
+            fab.setPadding(padding, 0, padding, 0)
+
+            fab.setOnClickListener { view ->
+                val popup = android.widget.PopupMenu(this, view)
+                popup.menu.add("Open in Wikipedia app")
+                popup.menu.add("Open in web browser")
+                popup.menu.add("Edit")
+
+                popup.setOnMenuItemClickListener { menuItem ->
+                    val currentUrl = webView.url
+                    if (currentUrl != null) {
+                        val articleTitle = getArticleTitleFromUrl(Uri.parse(currentUrl))
+                        if (articleTitle != null) {
+                            when (menuItem.title) {
+                                "Open in Wikipedia app" -> {
+                                    val articleUrl = "https://$lang.wikipedia.org/wiki/$articleTitle"
+                                    val appUri = Uri.parse(articleUrl)
+                                    val appIntent = Intent(Intent.ACTION_VIEW, appUri)
+                                    appIntent.setPackage("org.wikipedia") // Try to open official app directly
+                                    try {
+                                        startActivity(appIntent)
+                                    } catch (e: Exception) {
+                                        // Fallback to searching the Play Store if the app is not installed
+                                        val storeIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=org.wikipedia"))
+                                        try {
+                                            startActivity(storeIntent)
+                                        } catch (e2: Exception) {
+                                            // If Play Store is not available, open in browser
+                                            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=org.wikipedia"))
+                                            startActivity(browserIntent)
+                                        }
+                                    }
+                                }
+                                "Open in web browser" -> {
+                                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(currentUrl))
+                                    startActivity(browserIntent)
+                                }
+                                "Edit" -> {
+                                    val editUrl = "https://$lang.wikipedia.org/w/index.php?title=$articleTitle&action=edit"
+                                    val editIntent = Intent(Intent.ACTION_VIEW, Uri.parse(editUrl))
+                                    startActivity(editIntent)
+                                }
+                            }
+                        }
+                    }
+                    true
+                }
+                popup.show()
+            }
+            frameLayout.addView(fab)
+
             webviewContainer.addView(frameLayout)
 
             setupWebView(webView, lang)
