@@ -58,7 +58,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.net.URLDecoder
+import kotlin.coroutines.resume
 
 class MainActivity : AppCompatActivity() {
 
@@ -1300,16 +1302,27 @@ class MainActivity : AppCompatActivity() {
             .setCancelable(false)
             .show()
 
-        // Get article text from the first webview
-        webViews.firstOrNull()?.evaluateJavascript("(function() { return document.body.innerText; })();") { articleText ->
-            lifecycleScope.launch {
-                val result = llmManager.answerQuestion(question, articleText ?: "")
-                thinkingDialog.dismiss()
-                result.onSuccess { answer ->
-                    showAnswerDialog(question, answer)
-                }.onFailure {
-                    showLlmErrorDialog()
-                }
+        lifecycleScope.launch {
+            val articles = webViews.mapIndexed { index, webView ->
+                val lang = displayLanguages[index]
+                val articleText = webView.getInnerText()
+                "\"\"\"$lang\n$articleText\"\"\""
+            }.joinToString("\n\n")
+
+            val result = llmManager.answerQuestion(question, articles)
+            thinkingDialog.dismiss()
+            result.onSuccess { answer ->
+                showAnswerDialog(question, answer)
+            }.onFailure {
+                showLlmErrorDialog()
+            }
+        }
+    }
+
+    private suspend fun WebView.getInnerText(): String {
+        return suspendCancellableCoroutine { continuation ->
+            evaluateJavascript("(function() { return document.body.innerText; })();") { result ->
+                continuation.resume(result?.trim()?.removeSurrounding("\"") ?: "")
             }
         }
     }
