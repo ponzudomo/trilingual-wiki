@@ -173,6 +173,8 @@ class ImageViewerInterceptionTest {
         val existingCssFeatures = listOf(
             "padding-left: 8px !important; padding-right: 8px !important;",
             ".minerva-header { display: none !important; }",
+            ".page-actions-menu { display: none !important; }",
+            ".mw-ui-icon-edit { display: none !important; }",
             "body { margin-top: 0 !important; padding-top: 0 !important; }"
         )
         
