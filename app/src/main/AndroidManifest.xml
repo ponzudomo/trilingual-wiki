@@ -26,6 +26,10 @@
         <activity
             android:name=".bookmarks.BookmarksActivity"
             android:exported="false" />
+        <activity
+            android:name=".FullscreenImageActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TrilingualWiki.Fullscreen" />
     </application>
 
 </manifest>
