@@ -474,14 +474,16 @@ class MainActivity : AppCompatActivity() {
             fab.setPadding(padding, 0, padding, 0)
 
             fab.setOnClickListener { view ->
-                val popup = android.widget.PopupMenu(this, view)
-                popup.menu.add("Open in Wikipedia app")
-                popup.menu.add("Open in web browser")
-                popup.menu.add("Edit")
+                val currentUrl = webView.url
+                if (currentUrl == null || currentUrl.startsWith("app://local/no_article")) {
+                    // No article, do nothing.
+                } else {
+                    val popup = android.widget.PopupMenu(this, view)
+                    popup.menu.add("Open in Wikipedia app")
+                    popup.menu.add("Open in web browser")
+                    popup.menu.add("Edit")
 
-                popup.setOnMenuItemClickListener { menuItem ->
-                    val currentUrl = webView.url
-                    if (currentUrl != null) {
+                    popup.setOnMenuItemClickListener { menuItem ->
                         val articleTitle = getArticleTitleFromUrl(Uri.parse(currentUrl))
                         if (articleTitle != null) {
                             when (menuItem.title) {
@@ -515,10 +517,10 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                         }
+                        true
                     }
-                    true
+                    popup.show()
                 }
-                popup.show()
             }
             frameLayout.addView(fab)
 
@@ -1105,7 +1107,7 @@ class MainActivity : AppCompatActivity() {
                 </body>
             </html>
         """.trimIndent()
-        webView?.loadData(htmlContent, "text/html; charset=utf-8", "UTF-8")
+        webView?.loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", "app://local/no_article/$lang")
     }
 
     private fun performFullSearch(searchTerm: String, sitelinks: Map<String, String>? = null, wikidataId: String? = null) {
